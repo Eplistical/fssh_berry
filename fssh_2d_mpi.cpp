@@ -155,6 +155,8 @@ void init_state(state_t& state) {
     state[4].real(sqrt(1.0 - init_s));
     state[5].real(sqrt(init_s));
     state[6].real((randomer::rand() < init_s) ? 1.0 : 0.0);
+
+    misc::crasher::confirm(state[2].real() > 0.0, "px < 0.0 !!");
 }
 
 void cal_info_nume(const vector<double>& r)

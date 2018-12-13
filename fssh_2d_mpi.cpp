@@ -420,6 +420,24 @@ void fssh() {
             // check end
             bool end_flag = all_of(state.begin(), state.end(), check_end);
             if (end_flag == true) {
+                // fill the rest
+                fill(n0trans_arr.begin() + irec + 1, n0trans_arr.end(), n0trans);
+                fill(n0refl_arr.begin() + irec + 1, n0refl_arr.end(), n0refl);
+                fill(n1trans_arr.begin() + irec + 1, n1trans_arr.end(), n1trans);
+                fill(n1refl_arr.begin() + irec + 1, n1refl_arr.end(), n1refl);
+
+                fill(px0trans_arr.begin() + irec + 1, px0trans_arr.end(), px0trans);
+                fill(px0refl_arr.begin() + irec + 1, px0refl_arr.end(), px0refl);
+                fill(px1trans_arr.begin() + irec + 1, px1trans_arr.end(), px1trans);
+                fill(px1refl_arr.begin() + irec + 1, px1refl_arr.end(), px1refl);
+
+                fill(py0trans_arr.begin() + irec + 1, py0trans_arr.end(), py0trans);
+                fill(py0refl_arr.begin() + irec + 1, py0refl_arr.end(), py0refl);
+                fill(py1trans_arr.begin() + irec + 1, py1trans_arr.end(), py1trans);
+                fill(py1refl_arr.begin() + irec + 1, py1refl_arr.end(), py1refl);
+
+                fill(KE_arr.begin() + irec + 1, KE_arr.end(), KE);
+                fill(PE_arr.begin() + irec + 1, PE_arr.end(), PE);
                 break;
             }
         }

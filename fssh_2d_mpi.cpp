@@ -540,6 +540,7 @@ void fssh() {
         ioer::info("# hopup = ", hopup, " hopdn = ", hopdn, " hopfr = ", hopfr, " hopfr_rate = ", hopfr / (hopup + hopdn + hopfr));
         ioer::info("# hop count: ", hop_count_summary);
     }
+    MPIer::barrier();
 }
 
 void check_surf() {

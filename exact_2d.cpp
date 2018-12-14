@@ -111,16 +111,27 @@ bool check_end( const vector< complex<double> >& psi0, const vector< complex<dou
                 const vector<double>& xarr, const vector<double>& yarr)
 {
     // if the WF is outside the wall, return true to stop the program
-    double n_outside = 0.0;
+    double n0_outside = 0.0;
+    double n1_outside = 0.0;
+    double n0_total = 0.0;
+    double n1_total = 0.0;
     for (int k = 0; k < M; ++k) {
         for (int j = 0; j < M; ++j) {
             double x = xarr[j];
+            n0_total += pow(abs(psi0[k+j*M]), 2);
+            n1_total += pow(abs(psi1[k+j*M]), 2);
             if (x < xwall_left or x > xwall_right) {
-                n_outside += pow(abs(psi0[k+j*M]), 2) + pow(abs(psi1[k+j*M]), 2);
+                n0_outside += pow(abs(psi0[k+j*M]), 2);
+                n1_outside += pow(abs(psi1[k+j*M]), 2);
             }
         }
     }
-    return (n_outside > 0.01);
+    if ((n0_outside / n0_total > 0.02) or (n1_outside / n1_total > 0.02)) {
+        return true;
+    }
+    else {
+        return false;
+    }
 }
 
 void exact() {

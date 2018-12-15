@@ -126,7 +126,7 @@ bool check_end( const vector< complex<double> >& psi0, const vector< complex<dou
             }
         }
     }
-    if ((n0_outside / n0_total > 0.02) or (n1_outside / n1_total > 0.02)) {
+    if ((n0_outside / n0_total > 0.01) or (n1_outside / n1_total > 0.01)) {
         return true;
     }
     else {

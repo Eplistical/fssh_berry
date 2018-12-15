@@ -150,13 +150,16 @@ void init_state(state_t& state) {
     // state = x, y, vx, vy, c0, c1, s
     state[0].real(randomer::normal(init_x, sigma_x)); 
     state[1].real(randomer::normal(init_y, sigma_y)); 
+
     state[2].real(randomer::normal(init_px, sigma_px) / mass); 
+    while (state[2].real() <= 0.0) {
+        state[2].real(randomer::normal(init_px, sigma_px) / mass); 
+    }
+
     state[3].real(randomer::normal(init_py, sigma_py) / mass); 
     state[4].real(sqrt(1.0 - init_s));
     state[5].real(sqrt(init_s));
     state[6].real((randomer::rand() < init_s) ? 1.0 : 0.0);
-
-    MPIer::abort(1);
 }
 
 void cal_info_nume(const vector<double>& r)

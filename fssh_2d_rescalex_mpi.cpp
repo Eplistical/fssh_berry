@@ -325,7 +325,7 @@ void fssh() {
     vector<double> px0trans_arr(Nrec), px0refl_arr(Nrec), px1trans_arr(Nrec), px1refl_arr(Nrec);
     vector<double> py0trans_arr(Nrec), py0refl_arr(Nrec), py1trans_arr(Nrec), py1refl_arr(Nrec);
     vector<double> KE_arr(Nrec), PE_arr(Nrec);
-    vector<double> hop_count_summary(20, 0.0);
+    vector<double> hop_count_summary(50, 0.0);
     // main loop
     vector< vector< complex<double> > > lastevt_save(my_Ntraj);
     for (int istep(0); istep < Nstep; ++istep) {

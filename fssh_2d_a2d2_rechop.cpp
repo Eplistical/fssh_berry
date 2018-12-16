@@ -574,7 +574,7 @@ void fssh() {
         misc::crasher::confirm(false, "invalid output mode");
     }
     // hop info
-    vector<double> hop_count_summary(20, 0.0);
+    vector<double> hop_count_summary(50, 0.0);
     for_each(hop_count.begin(), hop_count.end(), [&hop_count_summary](double x) { hop_count_summary[static_cast<int>(x)] += 1.0; });
     ioer::info("# hopup = ", hopup, " hopdn = ", hopdn, " hopfr = ", hopfr, " hopfr_rate = ", hopfr / (hopup + hopdn + hopfr));
     ioer::info("# hop count: ", hop_count_summary);

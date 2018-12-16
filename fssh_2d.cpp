@@ -322,6 +322,7 @@ void fssh() {
     // main loop
     vector< vector< complex<double> > > lastevt_save(Ntraj);
     vector<bool> deco_flag(Ntraj, false);
+    vector<double> hop_count(Ntraj, 0.0);
     // statistics
     double n0trans = 0.0, n0refl = 0.0, n1trans = 0.0, n1refl = 0.0;
     double px0trans = 0.0, px0refl = 0.0, px1trans = 0.0, px1refl = 0.0;
@@ -338,8 +339,8 @@ void fssh() {
                 if (enable_hop) {
                     int hopflag = hopper(state[itraj]);
                     switch (hopflag) {
-                        case HOP_UP : hopup += 1.0; break;
-                        case HOP_DN : hopdn += 1.0; break;
+                        case HOP_UP : { hopup += 1.0; hop_count[itraj] += 1.0; break; }
+                        case HOP_DN : { hopdn += 1.0; hop_count[itraj] += 1.0; break; }
                         case HOP_FR : hopfr += 1.0; break;
                         case HOP_RJ : hoprj += 1.0; break;
                         default : break;
@@ -467,7 +468,11 @@ void fssh() {
         misc::crasher::confirm(false, "invalid output mode");
     }
     // hop info
+    vector<double> hop_count_summary(50, 0.0);
+    for_each(hop_count.begin(), hop_count.end(), 
+            [&hop_count_summary](double x) { hop_count_summary[static_cast<int>(x)] += 1.0; });
     ioer::info("# hopup = ", hopup, " hopdn = ", hopdn, " hopfr = ", hopfr, " hopfr_rate = ", hopfr / (hopup + hopdn + hopfr));
+    ioer::info("# hop count: ", hop_count_summary);
 }
 
 void check_surf() {

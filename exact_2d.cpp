@@ -118,9 +118,10 @@ bool check_end( const vector< complex<double> >& psi0, const vector< complex<dou
     for (int k = 0; k < M; ++k) {
         for (int j = 0; j < M; ++j) {
             double x = xarr[j];
+            double y = yarr[k];
             n0_total += pow(abs(psi0[k+j*M]), 2);
             n1_total += pow(abs(psi1[k+j*M]), 2);
-            if (x < xwall_left or x > xwall_right) {
+            if (x < xwall_left or x > xwall_right or y < xwall_left or y > xwall_right) {
                 n0_outside += pow(abs(psi0[k+j*M]), 2);
                 n1_outside += pow(abs(psi1[k+j*M]), 2);
             }

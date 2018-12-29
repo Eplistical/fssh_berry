@@ -272,7 +272,7 @@ int hopper(state_t& state) {
         // adjust momentum
         vector<double> n(2);
 
-        double tmp = pow(cal_der_theta(r[0]), 2) - pow(sin(cal_theta(r[0])), 4) * pow(cal_der_phi(r[1]), 2);
+        double tmp = pow(cal_der_theta(r[0]), 2) - pow(sin(cal_theta(r[0])) * cal_der_phi(r[1]), 2);
         if (tmp >= 0.0) {
             n[0] = 1.0;
             n[1] = 0.0;

@@ -271,8 +271,8 @@ int hopper(state_t& state) {
     if (randomer::rand() < g) {
         // adjust momentum
         vector<double> n(2);
-        n[0] = ((c[0] * conj(c[1]) * dcx[1+0*2]).real();
-        n[1] = ((c[0] * conj(c[1]) * dcy[1+0*2]).real();
+        n[0] = (c[0] * conj(c[1]) * dcx[1+0*2]).real();
+        n[1] = (c[0] * conj(c[1]) * dcy[1+0*2]).real();
 
         if (norm(n) > 1e-40) {
             vector<double> vn = component(v, n);

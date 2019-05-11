@@ -24,23 +24,27 @@ const complex<double> zone(1.0, 0.0);
 const complex<double> zI(0.0, 1.0);
 
 double A = 0.10;
-const double B = 3.0;
+double B = 3.0;
 double W = 0.3;
 const double mass = 1000.0;
 double init_x = -3.0;
 double sigma_x = 0.5; 
 double init_px = 30.0;
 double sigma_px = 1.0; 
-const double init_y = 0.0;
-const double sigma_y = 0.5; 
-const double init_py = 0.0;
-const double sigma_py = 1.0; 
+double init_y = 0.0;
+double sigma_y = 0.5; 
+double init_py = 0.0;
+double sigma_py = 1.0; 
 double init_s = 1.0;
+double xwall_left = -10.0;
+double xwall_right = 10.0;
+int Nstep = 1000000;
+double dt = 0.1;
+int output_step = 100;
 int Ntraj = 5000;
-const double Nstep = 100000000;
-const double dt = 0.1;
-const int output_step = 100;
+int seed = 0;
 bool enable_berry_force = true;
+string output_mod = "init_px";
 
 vector< complex<double> > Fx, Fy, dcx, dcy;
 
@@ -50,14 +54,26 @@ inline bool argparse(int argc, char** argv)
     desc.add_options()
         ("help", "produce help message")
         ("A", po::value<double>(&A), "potential para A")
+        ("B", po::value<double>(&B), "potential para B")
         ("W", po::value<double>(&W), "potential W")
         ("init_x", po::value<double>(&init_x), "init x")
         ("sigma_x", po::value<double>(&sigma_x), "init sigma x")
         ("init_px", po::value<double>(&init_px), "potential para init_px")
         ("sigma_px", po::value<double>(&sigma_px), "init sigma px")
+        ("init_y", po::value<double>(&init_y), "init y")
+        ("sigma_y", po::value<double>(&sigma_y), "init sigma y")
+        ("init_py", po::value<double>(&init_py), "potential para init_py")
+        ("sigma_py", po::value<double>(&sigma_py), "init sigma py")
         ("init_s", po::value<double>(&init_s), "init surface")
+        ("xwall_left", po::value<double>(&xwall_left), "wall on x direction to check end")
+        ("xwall_right", po::value<double>(&xwall_right), "wall on x direction to check end")
         ("Ntraj", po::value<int>(&Ntraj), "# traj")
+        ("Nstep", po::value<int>(&Nstep), "# step")
+        ("output_step", po::value<int>(&output_step), "# step for output")
+        ("dt", po::value<double>(&dt), "single time step")
+        ("seed", po::value<int>(&seed), "random seed")
         ("enable_berry_force", po::value<bool>(&enable_berry_force), "enable Berry force")
+        ("output_mod", po::value<string>(&output_mod), "output mode, init_s or init_px")
         ;
     po::variables_map vm; 
     po::store(po::parse_command_line(argc, argv, desc), vm);

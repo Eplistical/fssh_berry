@@ -43,7 +43,7 @@ double dt = 0.1;
 int output_step = 100;
 int Ntraj = 5000;
 int seed = 0;
-bool enable_berry_force = true;
+bool enable_berry_force = false;
 string output_mod = "init_px";
 
 vector< complex<double> > Fx, Fy, dcx, dcy;
@@ -58,11 +58,11 @@ inline bool argparse(int argc, char** argv)
         ("W", po::value<double>(&W), "potential W")
         ("init_x", po::value<double>(&init_x), "init x")
         ("sigma_x", po::value<double>(&sigma_x), "init sigma x")
-        ("init_px", po::value<double>(&init_px), "potential para init_px")
+        ("init_px", po::value<double>(&init_px), "init px")
         ("sigma_px", po::value<double>(&sigma_px), "init sigma px")
         ("init_y", po::value<double>(&init_y), "init y")
         ("sigma_y", po::value<double>(&sigma_y), "init sigma y")
-        ("init_py", po::value<double>(&init_py), "potential para init_py")
+        ("init_py", po::value<double>(&init_py), "init py")
         ("sigma_py", po::value<double>(&sigma_py), "init sigma py")
         ("init_s", po::value<double>(&init_s), "init surface")
         ("xwall_left", po::value<double>(&xwall_left), "wall on x direction to check end")
@@ -171,10 +171,10 @@ void sys(const state_t& state, state_t& state_dot, const double /* t */) {
 state_t init_state() {
     // state = x, y, vx, vy, a00, a01, a10, a11, s
     state_t state(8, zzero);
-    state[0].real(randomer::normal(-3.0, 0.5)); 
-    state[1].real(randomer::normal(-2.5, 0.5)); 
-    state[2].real(randomer::normal(30.0, 1.0) / mass); 
-    state[3].real(randomer::normal( 0.0, 1.0) / mass); 
+    state[0].real(randomer::normal( init_x, 0.5)); 
+    state[1].real(randomer::normal( init_y, 0.5)); 
+    state[2].real(randomer::normal( init_px, 1.0) / mass); 
+    state[3].real(randomer::normal( init_py, 1.0) / mass); 
 
     complex<double> c0 = sqrt(1.0 - init_s);
     complex<double> c1 = sqrt(init_s);
@@ -192,7 +192,7 @@ bool check_end(const state_t& state) {
     return ((x > 5.0 and vx > 0.0) or (x < -5.0 and vx < 0.0));
 }
 
-void erenfest() {
+void ehrenfest() {
     // propagation variables
     runge_kutta4<state_t> rk4;
     vector<state_t> state(Ntraj);
@@ -208,11 +208,13 @@ void erenfest() {
                 " sigma_x = ", sigma_x, " sigma_px = ", sigma_px, 
                 " init_y = ", init_y, " init_py = ", init_py, 
                 " sigma_y = ", sigma_y, " sigma_py = ", sigma_py, 
-                " init_s = ", init_s
+                " init_s = ", init_s, "enable_berry_force = ", enable_berry_force
             );
 
     // main loop
-    double vx, vy, v2x, v2y, Ep;
+    double ntrans, nrefl;
+    double vxtrans, vytrans, vxrefl, vyrefl;
+    double Ep, Ek;
     for (int istep(0); istep < Nstep; ++istep) {
         for (int itraj(0); itraj < Ntraj; ++itraj) {
             // calc info
@@ -226,34 +228,44 @@ void erenfest() {
             ioer::tabout(
                     "#",
                     "t",
-                    "px", "py",
-                    "Ekx", "Eky",
-                    "Ep", "Etot",
+                    "ntrans", "nrefl",
+                    "pxtrans", "pytrans",
+                    "pxrefl", "pyrefl",
+                    "Etot",
                     "");
         }
 
         if (istep % output_step == 0) {
-            vx = vy = 0.0;
-            v2x = v2y = 0.0;
-            Ep = 0.0;
-
-            for_each(state.begin(), state.end(), [&vx](const state_t& st) { vx += st[2].real(); });
-            for_each(state.begin(), state.end(), [&vy](const state_t& st) { vy += st[3].real(); });
-            for_each(state.begin(), state.end(), [&v2x](const state_t& st) { v2x += pow(st[2].real(), 2); });
-            for_each(state.begin(), state.end(), [&v2y](const state_t& st) { v2y += pow(st[3].real(), 2); });
-            for_each(state.begin(), state.end(), [&Ep](const state_t& st) { 
+            ntrans = nrefl = 0.0;
+            vxtrans = vytrans = 0.0;
+            vxrefl = vyrefl = 0.0;
+            Ep = Ek = 0.0;
+            for_each(state.begin(), state.end(), [&ntrans, &nrefl, &vxtrans, &vytrans, &vxrefl, &vyrefl, &Ep, &Ek](const state_t& st) {
+                        if (st[2].real() > 0.0) {
+                            ntrans += 1.0;
+                            vxtrans += st[2].real();
+                            vytrans += st[3].real();
+                        }
+                        else {
+                            nrefl += 1.0;
+                            vxrefl += st[2].real();
+                            vyrefl += st[3].real();
+                        }
+                        Ek += 0.5 * mass * (pow(st[2].real(), 2) + pow(st[3].real(), 2));
                         Ep += st[4].real() * -A + st[7].real() * A;
                     });
+
 
             ioer::tabout(
                     "#",
                     istep * dt, 
-                    mass * vx / Ntraj, 
-                    mass * vy / Ntraj,
-                    0.5 * mass * v2x / Ntraj,
-                    0.5 * mass * v2y / Ntraj,
-                    Ep / Ntraj,
-                    (0.5 * mass * (v2x + v2y) + Ep) / Ntraj,
+                    ntrans / Ntraj,
+                    nrefl / Ntraj,
+                    ntrans > 0 ? mass * vxtrans / ntrans : 0.0, 
+                    ntrans > 0 ? mass * vytrans / ntrans : 0.0, 
+                    nrefl > 0 ? mass * vxrefl / nrefl : 0.0, 
+                    nrefl > 0 ? mass * vyrefl / nrefl : 0.0, 
+                    (Ek + Ep) / Ntraj, 
                     "");
             // check end
             bool end_flag = all_of(state.begin(), state.end(), check_end);
@@ -262,15 +274,21 @@ void erenfest() {
             }
         }
     }
+    if (output_mod == "init_px") {
+        ioer::tabout_nonewline(init_px);
+    }
+    else if (output_mod == "init_s") {
+        ioer::tabout_nonewline(init_s);
+    }
+
     ioer::tabout(
-            //init_px,
-            init_s,
-            mass * vx / Ntraj, 
-            mass * vy / Ntraj,
-            0.5 * mass * v2x / Ntraj,
-            0.5 * mass * v2y / Ntraj,
-            Ep / Ntraj,
-            (0.5 * mass * (v2x + v2y) + Ep) / Ntraj,
+            ntrans / Ntraj,
+            nrefl / Ntraj,
+            ntrans > 0 ? mass * vxtrans / ntrans : 0.0, 
+            ntrans > 0 ? mass * vytrans / ntrans : 0.0, 
+            nrefl > 0 ? mass * vxrefl / nrefl : 0.0, 
+            nrefl > 0 ? mass * vyrefl / nrefl : 0.0, 
+            (Ek + Ep) / Ntraj, 
             "");
 }
 
@@ -280,7 +298,7 @@ int main(int argc, char** argv) {
     }
     randomer::seed(0);
     timer::tic();
-    erenfest();
+    ehrenfest();
     ioer::info("# ", timer::toc());
     return 0;
 }

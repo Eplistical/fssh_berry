@@ -171,10 +171,10 @@ void sys(const state_t& state, state_t& state_dot, const double /* t */) {
 state_t init_state() {
     // state = x, y, vx, vy, a00, a01, a10, a11, s
     state_t state(8, zzero);
-    state[0].real(randomer::normal( init_x, 0.5)); 
-    state[1].real(randomer::normal( init_y, 0.5)); 
-    state[2].real(randomer::normal( init_px, 1.0) / mass); 
-    state[3].real(randomer::normal( init_py, 1.0) / mass); 
+    state[0].real(randomer::normal( init_x, sigma_x)); 
+    state[1].real(randomer::normal( init_y, sigma_y)); 
+    state[2].real(randomer::normal( init_px, sigma_px) / mass); 
+    state[3].real(randomer::normal( init_py, sigma_py) / mass); 
 
     complex<double> c0 = sqrt(1.0 - init_s);
     complex<double> c1 = sqrt(init_s);
@@ -189,7 +189,7 @@ state_t init_state() {
 bool check_end(const state_t& state) {
     double x = state[0].real();
     double vx = state[2].real();
-    return ((x > 5.0 and vx > 0.0) or (x < -5.0 and vx < 0.0));
+    return ((x > xwall_right and vx > 0.0) or (x < xwall_left and vx < 0.0));
 }
 
 void ehrenfest() {
@@ -266,6 +266,10 @@ void ehrenfest() {
                     nrefl > 0 ? mass * vxrefl / nrefl : 0.0, 
                     nrefl > 0 ? mass * vyrefl / nrefl : 0.0, 
                     (Ek + Ep) / Ntraj, 
+                    state[0][0].real(),
+                    state[0][1].real(),
+                    state[0][6].real(),
+                    state[0][6].imag(),
                     "");
             // check end
             bool end_flag = all_of(state.begin(), state.end(), check_end);

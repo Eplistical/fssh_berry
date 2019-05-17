@@ -213,6 +213,8 @@ void ehrenfest() {
 
     // main loop
     double ntrans, nrefl;
+    double n1trans, n1refl;
+    double n0trans, n0refl;
     double vxtrans, vytrans, vxrefl, vyrefl;
     double Ep, Ek;
     for (int istep(0); istep < Nstep; ++istep) {
@@ -228,6 +230,8 @@ void ehrenfest() {
             ioer::tabout(
                     "#",
                     "t",
+                    "n0trans", "n0refl",
+                    "n1trans", "n1refl",
                     "ntrans", "nrefl",
                     "pxtrans", "pytrans",
                     "pxrefl", "pyrefl",
@@ -237,17 +241,25 @@ void ehrenfest() {
 
         if (istep % output_step == 0) {
             ntrans = nrefl = 0.0;
+            n0trans = n0refl = 0.0;
+            n1trans = n1refl = 0.0;
             vxtrans = vytrans = 0.0;
             vxrefl = vyrefl = 0.0;
             Ep = Ek = 0.0;
-            for_each(state.begin(), state.end(), [&ntrans, &nrefl, &vxtrans, &vytrans, &vxrefl, &vyrefl, &Ep, &Ek](const state_t& st) {
+            for_each(state.begin(), state.end(), [&ntrans, &nrefl, &n0trans, &n0refl, &n1trans, &n1refl, &vxtrans, &vytrans, &vxrefl, &vyrefl, &Ep, &Ek](const state_t& st) {
                         if (st[2].real() > 0.0) {
                             ntrans += 1.0;
+                            n0trans += st[4].real();
+                            n1trans += st[7].real();
+
                             vxtrans += st[2].real();
                             vytrans += st[3].real();
                         }
                         else {
                             nrefl += 1.0;
+                            n0refl += st[4].real();
+                            n1refl += st[7].real();
+
                             vxrefl += st[2].real();
                             vyrefl += st[3].real();
                         }
@@ -259,6 +271,10 @@ void ehrenfest() {
             ioer::tabout(
                     "#",
                     istep * dt, 
+                    n0trans / Ntraj,
+                    n0refl / Ntraj,
+                    n1trans / Ntraj,
+                    n1refl / Ntraj,
                     ntrans / Ntraj,
                     nrefl / Ntraj,
                     ntrans > 0 ? mass * vxtrans / ntrans : 0.0, 

@@ -60,7 +60,7 @@ vector< complex<double> > lastevt;
 vector<double> eva(2);
 vector<double> Fx(2), Fy(2);
 vector< complex<double> > dcx(4), dcy(4);
-vector< complex<double> > Tmat(4);
+//vector< complex<double> > Tmat(4);
 
 inline bool argparse(int argc, char** argv) 
 {
@@ -214,6 +214,7 @@ void cal_info_nume(const vector<double>& r)
             }
         }
     }
+    /*
     // Tmat
     if (not lastevt.empty()) {
         // U
@@ -230,6 +231,7 @@ void cal_info_nume(const vector<double>& r)
         // Tmat
         Tmat = matrixop::logmh(U) / dt;
     }
+    */
     // save evt
     lastevt = move(evt);
 }
@@ -628,8 +630,8 @@ void fssh() {
 }
 
 void check_surf() {
-    W = 5.0;
     /*
+    W = 5.0;
     for (double x = xwall_left - 1; x < xwall_right + 1; x += 0.01) {
         cal_info(vector<double> {x, 0.0});
         ioer::tabout(x, eva, Fx, Fy, 
@@ -637,7 +639,6 @@ void check_surf() {
                 dcy[0+1*2].real(), dcy[0+1*2].imag(), abs(dcy[0+1*2])
                 );
     }
-    */
     dt = 0.1;
     vector<double> r {0, 0};
     vector<double> v {0.01, 0.001};
@@ -693,6 +694,7 @@ void check_surf() {
     ioer::info("U-adj(U)");
     ioer::info("T = ", Tmat);
     ioer::info("Tm01 = ", Tmat[0+1*2], " => ", abs(Tmat[0+1*2]));
+    */
 }
 
 int main(int argc, char** argv) {

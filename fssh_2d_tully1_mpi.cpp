@@ -60,6 +60,7 @@ vector< complex<double> > lastevt;
 vector<double> eva(2);
 vector<double> Fx(2), Fy(2);
 vector< complex<double> > dcx(4), dcy(4);
+vector< complex<double> > Tmat(4);
 
 inline bool argparse(int argc, char** argv) 
 {
@@ -111,11 +112,11 @@ double cal_der_phi(const double y) {
 
 vector< complex<double> > cal_H(const vector<double>& r) {
     const double x = r[0];
-    const double y = r[0];
+    const double y = r[1];
     const complex<double> eip = exp(matrixop::IMAGIZ * cal_phi(y));
 
     vector< complex<double> > H(4);
-    if (x >= 0.0 ) {
+    if (x >= 0.0) {
         H[0+0*2] = A * (1.0 - exp(-B * x));
     }
     else {
@@ -129,7 +130,7 @@ vector< complex<double> > cal_H(const vector<double>& r) {
 
 vector< complex<double> > cal_nablaHx(const vector<double>& r) {
     const double x = r[0];
-    const double y = r[0];
+    const double y = r[1];
     const complex<double> eip = exp(matrixop::IMAGIZ * cal_phi(y));
     vector< complex<double> > nablaHx(4);
 
@@ -149,7 +150,7 @@ vector< complex<double> > cal_nablaHx(const vector<double>& r) {
 
 vector< complex<double> > cal_nablaHy(const vector<double>& r) {
     const double x = r[0];
-    const double y = r[0];
+    const double y = r[1];
     const complex<double> eip = exp(matrixop::IMAGIZ * cal_phi(y));
     const double der_phi = cal_der_phi(y);
     vector< complex<double> > nablaHy(4);
@@ -213,6 +214,23 @@ void cal_info_nume(const vector<double>& r)
             }
         }
     }
+    // Tmat
+    if (not lastevt.empty()) {
+        // U
+        matrixop::hdiag(cal_H(r), eva, evt);
+        vector< complex<double> > U;
+        U = matrixop::matCmat(lastevt, evt, 2);
+        for (int i(0); i < 2; ++i) {
+            complex<double> phase = abs(U[i+i*2]) / U[i+i*2];
+            for (int j(0); j < 2; ++j) {
+                evt[j+i*2] *= phase;
+            }
+        }
+        U = matrixop::matCmat(lastevt, evt, 2);
+        // Tmat
+        Tmat = matrixop::logmh(U) / dt;
+    }
+    // save evt
     lastevt = move(evt);
 }
 
@@ -245,6 +263,56 @@ void sys(const state_t& state, state_t& state_dot, const double /* t */) {
     state_dot[4] = -zI * c[0] * eva[0] - c[1] * (v[0] * dcx[0+1*2] + v[1] * dcy[0+1*2]) - c[0] * (v[0] * dcx[0+0*2] + v[1] * dcy[0+0*2]);
     state_dot[5] = -zI * c[1] * eva[1] - c[0] * (v[0] * dcx[1+0*2] + v[1] * dcy[1+0*2]) - c[1] * (v[0] * dcx[1+1*2] + v[1] * dcy[1+1*2]);
     state_dot[6] = matrixop::ZEROZ;
+}
+
+
+void integtrate(state_t& state, const double dt) {
+    // integrate state dt forward, assuming all info needed has been evaluated
+    // state = x, v, c0, c1, s
+    vector<double> r { state[0].real(), state[1].real() };
+    vector<double> v { state[2].real(), state[3].real() };
+    vector< complex<double> > c { state[4], state[5] };
+    int s = static_cast<int>(state[6].real());
+    // extra Berry Force
+    double Fx_berry, Fy_berry;
+
+    // nuclear part, VV
+    cal_info(r);
+    Fx_berry = 2 * (dcx[s+(1-s)*2] * (v[0] * dcx[1-s+s*2] + v[1] * dcy[1-s+s*2])).imag();
+    Fy_berry = 2 * (dcy[s+(1-s)*2] * (v[0] * dcx[1-s+s*2] + v[1] * dcy[1-s+s*2])).imag();
+    v[0] += 0.5 * (Fx[s] + Fx_berry) / mass * dt;
+    v[1] += 0.5 * (Fy[s] + Fy_berry) / mass * dt;
+
+    r += v * dt;
+
+    cal_info(r);
+    Fx_berry = 2 * (dcx[s+(1-s)*2] * (v[0] * dcx[1-s+s*2] + v[1] * dcy[1-s+s*2])).imag();
+    Fy_berry = 2 * (dcy[s+(1-s)*2] * (v[0] * dcx[1-s+s*2] + v[1] * dcy[1-s+s*2])).imag();
+    v[0] += 0.5 * (Fx[s] + Fx_berry) / mass * dt;
+    v[1] += 0.5 * (Fy[s] + Fy_berry) / mass * dt;
+
+    state[0].real(r[0]);
+    state[1].real(r[1]);
+    state[2].real(v[0]);
+    state[3].real(v[1]);
+
+    // electron part, RK4
+    auto rk4_func = [&v](const vector< complex<double> >& c) {
+        vector< complex<double> > cdot(2);
+        cdot[0] = -zI * c[0] * eva[0] - c[1] * (v[0] * dcx[0+1*2] + v[1] * dcy[0+1*2]) - c[0] * (v[0] * dcx[0+0*2] + v[1] * dcy[0+0*2]);
+        cdot[1] = -zI * c[1] * eva[1] - c[0] * (v[0] * dcx[1+0*2] + v[1] * dcy[1+0*2]) - c[1] * (v[0] * dcx[1+1*2] + v[1] * dcy[1+1*2]);
+        return cdot;
+    };
+
+    vector< complex<double> > k1, k2, k3, k4;
+    k1 = dt * rk4_func(c);
+    k2 = dt * rk4_func(c + 0.5 * k1);
+    k3 = dt * rk4_func(c + 0.5 * k2);
+    k4 = dt * rk4_func(c + k3);
+    c += 1.0 / 6.0 * (k1 + 2.0 * k2 + 2.0 * k3 + k4);
+
+    state[4] = c[0];
+    state[5] = c[1];
 }
 
 int hopper(state_t& state) {
@@ -280,8 +348,10 @@ int hopper(state_t& state) {
         n[1] = (eieta * dcy[from+to*2]).real();
 
         // debug
+        /*
         n[0] = 1.0;
         n[1] = 0.0;
+        */
 
         if (norm(n) > 1e-40) {
             vector<double> vn = component(v, n);
@@ -342,8 +412,23 @@ void fssh() {
             if (check_end(state[itraj]) == false) {
                 // assign last evt
                 lastevt = move(lastevt_save[itraj]);
-                // calc info
-                cal_info(vector<double> { state[itraj][0].real(), state[itraj][1].real() });
+                // propagate
+                //rk4.do_step(sys, state[itraj], istep * dt, dt);
+                integtrate(state[itraj], dt);
+
+                vector<double> r { state[itraj][0].real(), state[itraj][1].real() };
+                vector<double> v { state[itraj][2].real(), state[itraj][3].real() };
+                vector< complex<double> > c { state[itraj][4], state[itraj][5] };
+                int s = static_cast<int>(state[itraj][6].real());
+                ioer::info("r = ", r);
+                ioer::info("v = ", v);
+                ioer::info("-- T01 = ", Tmat[0+1*2], " abs = ", abs(Tmat[0+1*2]));
+                //complex<double> eip = exp(zI * M_PI / 6.0);
+                complex<double> eip = 1.0;
+                dcx *= eip;
+                dcy *= eip;
+                auto vd01 = state[itraj][2].real() * dcx[0+1*2] + state[itraj][3].real() * dcy[0+1*2];
+                ioer::info("-- p*d01/m = ", vd01, " abs = ", abs(vd01));
                 // hopper
                 if (enable_hop) {
                     int hopflag = hopper(state[itraj]);
@@ -355,8 +440,6 @@ void fssh() {
                         default : break;
                     }
                 }
-                // propagate
-                rk4.do_step(sys, state[itraj], istep * dt, dt);
                 // save last evt
                 lastevt_save[itraj] = move(lastevt);
             }
@@ -556,10 +639,71 @@ void fssh() {
 }
 
 void check_surf() {
+    W = 5.0;
+    /*
     for (double x = xwall_left - 1; x < xwall_right + 1; x += 0.01) {
         cal_info(vector<double> {x, 0.0});
-        ioer::tabout(x, eva, Fx, Fy, real(dcx), imag(dcy));
+        ioer::tabout(x, eva, Fx, Fy, 
+                dcx[0+1*2].real(), dcx[0+1*2].imag(), abs(dcx[0+1*2]), 
+                dcy[0+1*2].real(), dcy[0+1*2].imag(), abs(dcy[0+1*2])
+                );
     }
+    */
+    dt = 0.1;
+    vector<double> r {0, 0};
+    vector<double> v {0.01, 0.001};
+
+    cal_info(r + 0.5 * v * dt);
+    complex<double> vd01 = v[0] * dcx[0+1*2] + v[1] * dcy[0+1*2];
+    ioer::tabout(v, dcx[0+1*2], dcy[0+1*2]);
+    ioer::info("vd01 = ", vd01, " => ", abs(vd01));
+
+    // U
+    lastevt.clear();
+    cal_info(r);
+    vector< complex<double> > evt;
+
+    matrixop::hdiag(cal_H(r), eva, lastevt);
+    ioer::info(" ** r = ", r);
+    ioer::info(" ** H = ", cal_H(r));
+    ioer::info(" ** eva = ", eva);
+    ioer::info(" ** evt = ", lastevt);
+    matrixop::hdiag(cal_H(r + v * dt), eva, evt);
+    ioer::info(" **** r + v * dt = ", r + v * dt);
+    ioer::info(" **** H = ", cal_H(r + v * dt));
+    ioer::info(" **** eva = ", eva);
+    ioer::info(" **** evt = ", evt);
+
+    vector< complex<double> > U;
+    U = matrixop::matCmat(lastevt, evt, 2);
+    for (int i(0); i < 2; ++i) {
+        complex<double> phase = abs(U[i+i*2]) / U[i+i*2];
+        for (int j(0); j < 2; ++j) {
+            U[j+i*2] *= phase;
+        }
+    } 
+    ioer::info("U = ", U);
+    // Tmat
+    //Tmat[0+1*2] = 0.5 / dt * (U[0+1*2] - U[1+0*2]);
+
+    Tmat = matrixop::logmh(U) / dt;
+    ioer::newline();
+    ioer::info("logm(U)");
+    ioer::info("T = ", Tmat);
+    ioer::info("Tm01 = ", Tmat[0+1*2], " => ", abs(Tmat[0+1*2]));
+
+
+    Tmat = 0.5 / dt * (U - matrixop::transpose(U, 2));
+    ioer::newline();
+    ioer::info("U-trans(U)");
+    ioer::info("T = ", Tmat);
+    ioer::info("Tm01 = ", Tmat[0+1*2], " => ", abs(Tmat[0+1*2]));
+
+    Tmat = 0.5 / dt * (U - matrixop::adjoint(U, 2));
+    ioer::newline();
+    ioer::info("U-adj(U)");
+    ioer::info("T = ", Tmat);
+    ioer::info("Tm01 = ", Tmat[0+1*2], " => ", abs(Tmat[0+1*2]));
 }
 
 int main(int argc, char** argv) {

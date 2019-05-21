@@ -100,7 +100,7 @@ inline double cal_der_phi(double y) {
 
 vector< complex<double> > cal_H(const vector<double>& r) {
     const double x = r[0];
-    const double y = r[0];
+    const double y = r[1];
     const complex<double> eip = exp(matrixop::IMAGIZ * cal_phi(y));
 
     vector< complex<double> > H(4);
@@ -118,7 +118,7 @@ vector< complex<double> > cal_H(const vector<double>& r) {
 
 vector< complex<double> > cal_nablaHx(const vector<double>& r) {
     const double x = r[0];
-    const double y = r[0];
+    const double y = r[1];
     const complex<double> eip = exp(matrixop::IMAGIZ * cal_phi(y));
     vector< complex<double> > nablaHx(4);
 
@@ -138,7 +138,7 @@ vector< complex<double> > cal_nablaHx(const vector<double>& r) {
 
 vector< complex<double> > cal_nablaHy(const vector<double>& r) {
     const double x = r[0];
-    const double y = r[0];
+    const double y = r[1];
     const complex<double> eip = exp(matrixop::IMAGIZ * cal_phi(y));
     const double der_phi = cal_der_phi(y);
     vector< complex<double> > nablaHy(4);

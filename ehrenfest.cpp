@@ -43,10 +43,12 @@ double dt = 0.1;
 int output_step = 100;
 int Ntraj = 5000;
 int seed = 0;
-bool enable_berry_force = false;
 string output_mod = "init_px";
 
-vector< complex<double> > Fx, Fy, dcx, dcy;
+vector< complex<double> > lastevt;
+vector<double> eva(2);
+vector< complex<double> > Fx(4), Fy(4);
+vector< complex<double> > dcx(4), dcy(4);
 
 inline bool argparse(int argc, char** argv) 
 {
@@ -72,7 +74,6 @@ inline bool argparse(int argc, char** argv)
         ("output_step", po::value<int>(&output_step), "# step for output")
         ("dt", po::value<double>(&dt), "single time step")
         ("seed", po::value<int>(&seed), "random seed")
-        ("enable_berry_force", po::value<bool>(&enable_berry_force), "enable Berry force")
         ("output_mod", po::value<string>(&output_mod), "output mode, init_s or init_px")
         ;
     po::variables_map vm; 
@@ -101,8 +102,79 @@ inline double cal_der_phi(double y) {
     return W;
 }
 
+
+vector< complex<double> > cal_H(const vector<double>& r) {
+    const double theta = cal_theta(r[0]);
+    const complex<double> eip = exp(matrixop::IMAGIZ * cal_phi(r[1]));
+    vector< complex<double> > H {
+        -cos(theta), sin(theta) * conj(eip), sin(theta) * eip, cos(theta)
+    };
+    return A * H;
+}
+
+vector< complex<double> > cal_nablaHx(const vector<double>& r) {
+    const double theta = cal_theta(r[0]);
+    const double der_theta = cal_der_theta(r[0]);
+    const complex<double> eip = exp(matrixop::IMAGIZ * cal_phi(r[1]));
+    vector< complex<double> > nablaHx {
+        sin(theta), cos(theta) * conj(eip), cos(theta) * eip, -sin(theta)
+    };
+    return A * der_theta * nablaHx;
+}
+
+vector< complex<double> > cal_nablaHy(const vector<double>& r) {
+    const double theta = cal_theta(r[0]);
+    const double der_theta = cal_der_theta(r[0]);
+    const double der_phi = cal_der_phi(r[1]);
+    const complex<double> eip = exp(matrixop::IMAGIZ * cal_phi(r[1]));
+    vector< complex<double> > nablaHy {
+        0.0, -sin(theta) * conj(eip), sin(theta) * eip, 0.0
+    };
+    return matrixop::IMAGIZ * A * der_phi * nablaHy;
+}
+
+void cal_info_nume(const vector<double>& r)
+{
+    // nume
+    vector< complex<double> > evt;
+    matrixop::hdiag(cal_H(r), eva, evt);
+    // correct phase
+    if (not lastevt.empty()) {
+        auto tmp = matrixop::matCmat(lastevt, evt, 2);
+        for (int j = 0; j < 2; ++j) {
+            complex<double> eip = tmp[j+j*2] / abs(tmp[j+j*2]);
+            for (int k = 0; k < 2; ++k) {
+                evt[k+j*2] /= eip;
+            }
+        }
+    }
+    // F, dc
+    dcx = matrixop::matCmatmat(evt, cal_nablaHx(r), evt, 2, 2);
+    dcy = matrixop::matCmatmat(evt, cal_nablaHy(r), evt, 2, 2);
+    Fx.assign(4, 0.0);
+    Fy.assign(4, 0.0);
+    for (int j = 0; j < 2; ++j) {
+        for (int k = 0; k < 2; ++k) {
+            Fx[j+k*2] = -dcx[j+k*2];
+            Fy[j+k*2] = -dcy[j+k*2];
+            if (j == k) {
+                dcx[j+k*2] = 0.0;
+                dcy[j+k*2] = 0.0;
+            }
+            else {
+                dcx[j+k*2] /= (eva[k] - eva[j]);
+                dcy[j+k*2] /= (eva[k] - eva[j]);
+            }
+        }
+    }
+    lastevt = move(evt);
+}
+
 void cal_info(double x, double y)
 {
+    cal_info_nume(vector<double> { x, y });
+    return ;
+    /*
     Fx.assign(4, 0.0);
     Fy.assign(4, 0.0);
     dcx.assign(4, 0.0);
@@ -134,6 +206,7 @@ void cal_info(double x, double y)
     Fy[0+1*2] = (E0 - E1) * dcy[0+1*2];
     Fy[1+0*2] = (E1 - E0) * dcy[1+0*2];
     Fy[1+1*2] = 0.0;
+    */
 }
 
 void sys(const state_t& state, state_t& state_dot, const double /* t */) {
@@ -149,19 +222,11 @@ void sys(const state_t& state, state_t& state_dot, const double /* t */) {
 
     complex<double> vd01 = vx * dcx[0+1*2] + vy * dcy[0+1*2];
     complex<double> vd10 = vx * dcx[1+0*2] + vy * dcy[1+0*2];
-    // extra Berry Force
-    double Fx0_berry = 0.0, Fx1_berry = 0.0, Fy0_berry = 0.0, Fy1_berry = 0.0;
-    if (enable_berry_force) {
-        Fx0_berry = 2 * (dcx[0+1*2] * (vx * dcx[1+0*2] + vy * dcy[1+0*2])).imag();
-        Fx1_berry = 2 * (dcx[1+0*2] * (vx * dcx[0+1*2] + vy * dcy[0+1*2])).imag();
-        Fy0_berry = 2 * (dcy[0+1*2] * (vx * dcx[1+0*2] + vy * dcy[1+0*2])).imag();
-        Fy1_berry = 2 * (dcy[1+0*2] * (vx * dcx[0+1*2] + vy * dcy[0+1*2])).imag();
-    }
 
     state_dot[0] = vx;
     state_dot[1] = vy;
-    state_dot[2] = (a00 * (Fx[0+0*2] + Fx0_berry) + a01*Fx[1+0*2] + a10*Fx[0+1*2] + a11*(Fx[1+1*2] + Fx1_berry)) / mass;
-    state_dot[3] = (a00 * (Fy[0+0*2] + Fy0_berry) + a01*Fy[1+0*2] + a10*Fy[0+1*2] + a11*(Fy[1+1*2] + Fy1_berry)) / mass;
+    state_dot[2] = (a00 * Fx[0+0*2] + a01*Fx[1+0*2] + a10*Fx[0+1*2] + a11*Fx[1+1*2]) / mass;
+    state_dot[3] = (a00 * Fy[0+0*2] + a01*Fy[1+0*2] + a10*Fy[0+1*2] + a11*Fy[1+1*2]) / mass;
     state_dot[4] = -a10 * vd01 + a01 * vd10;
     state_dot[5] = -zI * -2.0 * A * a01 + (a00 - a11) * vd01;
     state_dot[6] = -zI *  2.0 * A * a10 + (a11 - a00) * vd10;
@@ -169,7 +234,7 @@ void sys(const state_t& state, state_t& state_dot, const double /* t */) {
 }
 
 state_t init_state() {
-    // state = x, y, vx, vy, a00, a01, a10, a11, s
+    // state = x, y, vx, vy, a00, a01, a10, a11
     state_t state(8, zzero);
     state[0].real(randomer::normal( init_x, sigma_x)); 
     state[1].real(randomer::normal( init_y, sigma_y)); 
@@ -208,7 +273,7 @@ void ehrenfest() {
                 " sigma_x = ", sigma_x, " sigma_px = ", sigma_px, 
                 " init_y = ", init_y, " init_py = ", init_py, 
                 " sigma_y = ", sigma_y, " sigma_py = ", sigma_py, 
-                " init_s = ", init_s, "enable_berry_force = ", enable_berry_force
+                " init_s = ", init_s
             );
 
     // main loop
@@ -217,12 +282,17 @@ void ehrenfest() {
     double n0trans, n0refl;
     double vxtrans, vytrans, vxrefl, vyrefl;
     double Ep, Ek;
+    vector< vector< complex<double> > > lastevt_save(Ntraj);
     for (int istep(0); istep < Nstep; ++istep) {
         for (int itraj(0); itraj < Ntraj; ++itraj) {
+            // assign last evt
+            lastevt = move(lastevt_save[itraj]);
             // calc info
             cal_info(state[itraj][0].real(), state[itraj][1].real());
             // propagate
             rk4.do_step(sys, state[itraj], istep * dt, dt);
+            // save last evt
+            lastevt_save[itraj] = move(lastevt);
         }
 
         // output
@@ -282,10 +352,6 @@ void ehrenfest() {
                     nrefl > 0 ? mass * vxrefl / nrefl : 0.0, 
                     nrefl > 0 ? mass * vyrefl / nrefl : 0.0, 
                     (Ek + Ep) / Ntraj, 
-                    state[0][0].real(),
-                    state[0][1].real(),
-                    state[0][6].real(),
-                    state[0][6].imag(),
                     "");
             // check end
             bool end_flag = all_of(state.begin(), state.end(), check_end);

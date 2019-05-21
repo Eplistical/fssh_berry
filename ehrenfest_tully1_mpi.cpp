@@ -395,14 +395,20 @@ void ehrenfest() {
             KE = KE_arr[irec];
             PE = PE_arr[irec];
 
+            if (n0trans + n1trans > 0.0) {
+                vxtrans /= (n0trans + n1trans);
+                vytrans /= (n0trans + n1trans);
+            }
+            if (n0refl + n1refl > 0.0) {
+                vxrefl /= (n0refl + n1refl);
+                vyrefl /= (n0refl + n1refl);
+            }
+
             n0trans /= Ntraj;
             n0refl /= Ntraj;
             n1trans /= Ntraj;
             n1refl /= Ntraj;
-            vxtrans /= Ntraj;
-            vxrefl /= Ntraj;
-            vytrans /= Ntraj;
-            vyrefl /= Ntraj;
+
             KE /= Ntraj;
             PE /= Ntraj;
 

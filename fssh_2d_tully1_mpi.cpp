@@ -412,23 +412,8 @@ void fssh() {
             if (check_end(state[itraj]) == false) {
                 // assign last evt
                 lastevt = move(lastevt_save[itraj]);
-                // propagate
-                //rk4.do_step(sys, state[itraj], istep * dt, dt);
-                integtrate(state[itraj], dt);
-
-                vector<double> r { state[itraj][0].real(), state[itraj][1].real() };
-                vector<double> v { state[itraj][2].real(), state[itraj][3].real() };
-                vector< complex<double> > c { state[itraj][4], state[itraj][5] };
-                int s = static_cast<int>(state[itraj][6].real());
-                ioer::info("r = ", r);
-                ioer::info("v = ", v);
-                ioer::info("-- T01 = ", Tmat[0+1*2], " abs = ", abs(Tmat[0+1*2]));
-                //complex<double> eip = exp(zI * M_PI / 6.0);
-                complex<double> eip = 1.0;
-                dcx *= eip;
-                dcy *= eip;
-                auto vd01 = state[itraj][2].real() * dcx[0+1*2] + state[itraj][3].real() * dcy[0+1*2];
-                ioer::info("-- p*d01/m = ", vd01, " abs = ", abs(vd01));
+                // calc info
+                cal_info(vector<double> { state[itraj][0].real(), state[itraj][1].real() });
                 // hopper
                 if (enable_hop) {
                     int hopflag = hopper(state[itraj]);
@@ -440,6 +425,10 @@ void fssh() {
                         default : break;
                     }
                 }
+                // propagate
+                rk4.do_step(sys, state[itraj], istep * dt, dt);
+                //integtrate(state[itraj], dt);
+                
                 // save last evt
                 lastevt_save[itraj] = move(lastevt);
             }

@@ -41,7 +41,6 @@ double dt = 0.1;
 int output_step = 100;
 int Ntraj = 5000;
 int seed = 0;
-string output_mod = "init_px";
 
 vector< complex<double> > lastevt;
 vector<double> eva(2);
@@ -70,7 +69,6 @@ inline bool argparse(int argc, char** argv)
         ("output_step", po::value<int>(&output_step), "# step for output")
         ("dt", po::value<double>(&dt), "single time step")
         ("seed", po::value<int>(&seed), "random seed")
-        ("output_mod", po::value<string>(&output_mod), "output mode, init_s or init_px")
         ;
     po::variables_map vm; 
     po::store(parse_command_line(argc, argv, desc, po::command_line_style::unix_style ^ po::command_line_style::allow_short), vm);

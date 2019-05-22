@@ -12,7 +12,6 @@
 #include "misc/matrixop.hpp"
 #include "misc/MPIer.hpp"
 #include "boost/numeric/odeint.hpp"
-#include "boost/math/special_functions/erf.hpp"
 #include "boost/program_options.hpp"
 
 #include "2d_flat_potential.hpp"
@@ -24,12 +23,10 @@ enum {
     HOP_FR
 };
 
-// BE CAREFUL! PHASE IS IMPORTANT HERE! (DC AND BERRY FORCE)
 
 using namespace std;
 namespace po = boost::program_options;
 using boost::numeric::odeint::runge_kutta4;
-using boost::math::erf;
 using state_t = vector< complex<double> >;
 const complex<double> zI(0.0, 1.0);
 
@@ -53,7 +50,6 @@ int output_step = 100;
 int Ntraj = 5000;
 int seed = 0;
 bool enable_hop = true;
-string output_mod = "init_px";
 
 vector< complex<double> > lastevt;
 vector<double> eva(2);
@@ -83,7 +79,6 @@ inline bool argparse(int argc, char** argv)
         ("dt", po::value<double>(&dt), "single time step")
         ("seed", po::value<int>(&seed), "random seed")
         ("enable_hop", po::value<bool>(&enable_hop), "enable hopping")
-        ("output_mod", po::value<string>(&output_mod), "output mode, init_s or init_px")
         ;
     po::variables_map vm; 
     po::store(parse_command_line(argc, argv, desc, po::command_line_style::unix_style ^ po::command_line_style::allow_short), vm);
@@ -382,7 +377,7 @@ void fssh() {
     if (MPIer::master) {
         // para & header
         output_potential_param();
-        ioer::info("# fsshp para: ", " Ntraj = ", Ntraj, " Nstep = ", Nstep, " dt = ", dt, " output_step = ", output_step, " output_mod = ", output_mod,
+        ioer::info("# fsshp para: ", " Ntraj = ", Ntraj, " Nstep = ", Nstep, " dt = ", dt, " output_step = ", output_step,
                 " mass = ", mass, 
                 " init_x = ", init_x, " init_px = ", init_px, 
                 " sigma_x = ", sigma_x, " sigma_px = ", sigma_px, 

@@ -151,8 +151,23 @@ int hopper(state_t& state) {
         // adjust momentum
         vector<double> n(2);
 
-        n[0] = 1.0;
-        n[1] = 0.0;
+        // Method #2
+        const int from = s;
+        const int to = 1 - s;
+        const vector<double> dcR { dcx[from+to*2].real(), dcy[from+to*2].real() };
+        const vector<double> dcI { dcx[from+to*2].imag(), dcy[from+to*2].imag() };
+        const double diff_norm2 = norm2(dcR) - norm2(dcI);
+        const double twice_eta0 = std::atan(-2 * (dcR[0] * dcI[0] + dcR[1] * dcI[1]) / diff_norm2);
+        double eta;
+        if (cos(twice_eta0) * diff_norm2 > 0.0) {
+            eta = 0.5 * twice_eta0;
+        }
+        else {
+            eta = 0.5 * twice_eta0 + 0.5 * M_PI;
+        }
+        const complex<double> eieta = exp(matrixop::IMAGIZ * eta);
+        n[0] = (eieta * dcx[from+to*2]).real();
+        n[1] = (eieta * dcy[from+to*2]).real();
 
         if (norm(n) > 1e-40) {
             vector<double> vn = component(v, n);
@@ -381,7 +396,7 @@ void fssh() {
     if (MPIer::master) {
         // para & header
         output_potential_param();
-        ioer::info("# fsshx para: ", " Ntraj = ", Ntraj, " Nstep = ", Nstep, " dt = ", dt, " output_step = ", output_step, " output_mod = ", output_mod,
+        ioer::info("# fsshm2 para: ", " Ntraj = ", Ntraj, " Nstep = ", Nstep, " dt = ", dt, " output_step = ", output_step, " output_mod = ", output_mod,
                 " mass = ", mass, 
                 " init_x = ", init_x, " init_px = ", init_px, 
                 " sigma_x = ", sigma_x, " sigma_px = ", sigma_px, 

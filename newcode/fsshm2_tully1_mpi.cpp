@@ -396,7 +396,7 @@ void fssh() {
     if (MPIer::master) {
         // para & header
         output_potential_param();
-        ioer::info("# fssh para: ", " Ntraj = ", Ntraj, " Nstep = ", Nstep, " dt = ", dt, " output_step = ", output_step, " output_mod = ", output_mod,
+        ioer::info("# fsshm2 para: ", " Ntraj = ", Ntraj, " Nstep = ", Nstep, " dt = ", dt, " output_step = ", output_step, " output_mod = ", output_mod,
                 " mass = ", mass, 
                 " init_x = ", init_x, " init_px = ", init_px, 
                 " sigma_x = ", sigma_x, " sigma_px = ", sigma_px, 

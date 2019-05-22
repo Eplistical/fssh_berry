@@ -151,8 +151,9 @@ int hopper(state_t& state) {
         // adjust momentum
         vector<double> n(2);
 
-        n[0] = 1.0;
-        n[1] = 0.0;
+        // p direction
+        n[0] = v[0];
+        n[1] = v[1];
 
         if (norm(n) > 1e-40) {
             vector<double> vn = component(v, n);
@@ -381,7 +382,7 @@ void fssh() {
     if (MPIer::master) {
         // para & header
         output_potential_param();
-        ioer::info("# fsshx para: ", " Ntraj = ", Ntraj, " Nstep = ", Nstep, " dt = ", dt, " output_step = ", output_step, " output_mod = ", output_mod,
+        ioer::info("# fsshp para: ", " Ntraj = ", Ntraj, " Nstep = ", Nstep, " dt = ", dt, " output_step = ", output_step, " output_mod = ", output_mod,
                 " mass = ", mass, 
                 " init_x = ", init_x, " init_px = ", init_px, 
                 " sigma_x = ", sigma_x, " sigma_px = ", sigma_px, 

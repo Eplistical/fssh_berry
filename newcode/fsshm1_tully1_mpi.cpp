@@ -15,7 +15,7 @@
 #include "boost/math/special_functions/erf.hpp"
 #include "boost/program_options.hpp"
 
-#include "2d_flat_potential.hpp"
+#include "2d_tully1_potential.hpp"
 
 enum {
     HOP_UP,
@@ -35,8 +35,8 @@ const complex<double> zI(0.0, 1.0);
 
 vector<double> potential_params;
 
-const double mass = 1000.0;
-double init_x = -3.0;
+const double mass = 2000.0;
+double init_x = -5.0;
 double sigma_x = 0.5; 
 double init_px = 20.0;
 double sigma_px = 1.0; 
@@ -151,8 +151,9 @@ int hopper(state_t& state) {
         // adjust momentum
         vector<double> n(2);
 
-        n[0] = 1.0;
-        n[1] = 0.0;
+        // Method 1 : real part of Berry force
+        n[0] = (dcx[s+(1-s)*2] * (v[0] * dcx[1-s+s*2] + v[1] * dcy[1-s+s*2])).real();
+        n[1] = (dcy[s+(1-s)*2] * (v[0] * dcx[1-s+s*2] + v[1] * dcy[1-s+s*2])).real();
 
         if (norm(n) > 1e-40) {
             vector<double> vn = component(v, n);
@@ -381,7 +382,7 @@ void fssh() {
     if (MPIer::master) {
         // para & header
         output_potential_param();
-        ioer::info("# fsshx para: ", " Ntraj = ", Ntraj, " Nstep = ", Nstep, " dt = ", dt, " output_step = ", output_step, " output_mod = ", output_mod,
+        ioer::info("# fsshm1 para: ", " Ntraj = ", Ntraj, " Nstep = ", Nstep, " dt = ", dt, " output_step = ", output_step, " output_mod = ", output_mod,
                 " mass = ", mass, 
                 " init_x = ", init_x, " init_px = ", init_px, 
                 " sigma_x = ", sigma_x, " sigma_px = ", sigma_px, 

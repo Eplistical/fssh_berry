@@ -44,12 +44,20 @@ namespace {
         return sqrt(M_PI) * param_B * exp(-param_B * param_B * x * x);
     }
 
+    double cal_der2_theta(double x) {
+        return -2.0 * sqrt(M_PI) * pow(param_B, 3) * x * exp(-param_B * param_B * x * x);
+    }
+
     double cal_phi(double y) {
         return param_W * y;
     }
 
     double cal_der_phi(double y) {
         return param_W;
+    }
+
+    double cal_der2_phi(double y) {
+        return 0.0;
     }
 
     vector< complex<double> > cal_H(const vector<double>& r) {

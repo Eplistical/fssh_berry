@@ -121,6 +121,46 @@ namespace {
         }
         lastevt = move(evt);
     }
+
+    void cal_info_anal(const vector<double>& r, 
+            vector< complex<double> >& Fx, vector< complex<double> >& Fy, 
+            vector< complex<double> >& dcx, vector< complex<double> >& dcy, 
+            vector<double>& eva
+            )
+    {
+        const double theta = cal_theta(r[0]);
+        const double der_theta = cal_der_theta(r[0]);
+        const double der_phi= cal_der_phi(r[1]);
+        const double CC = cos(0.5 * theta);
+        const double SS = sin(0.5 * theta);
+
+        // eva
+        eva.assign(2, 0.0);
+        eva[0] = -param_A;
+        eva[1] = param_A;
+
+        // dc
+        dcx.assign(4, 0.0);
+        dcx[0+0*2] = 0.0;
+        dcx[0+1*2] = 0.5 * der_theta;
+        dcx[1+0*2] = -0.5 * der_theta;
+        dcx[1+1*2] = 0.0;
+
+        dcy.assign(4, 0.0);
+        dcy[0+0*2] = matrixop::IMAGIZ * der_phi * CC * CC;
+        dcy[0+1*2] = matrixop::IMAGIZ * der_phi * SS * CC;
+        dcy[1+0*2] = matrixop::IMAGIZ * der_phi * SS * CC;
+        dcy[1+1*2] = matrixop::IMAGIZ * der_phi * SS * SS;
+
+        // F
+        Fx.assign(4, 0.0);
+        Fx[0+1*2] = dcx[0+1*2] * (eva[0] - eva[1]);
+        Fx[1+0*2] = dcx[1+0*2] * (eva[1] - eva[0]);
+
+        Fy.assign(4, 0.0);
+        Fy[0+1*2] = dcy[0+1*2] * (eva[0] - eva[1]);
+        Fy[1+0*2] = dcy[1+0*2] * (eva[1] - eva[0]);
+    }
 };
 
 #endif

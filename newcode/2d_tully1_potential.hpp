@@ -33,7 +33,7 @@ namespace {
 
     void set_potenial_params(const std::vector<double>& params) {
         misc::crasher::confirm(params.size() >= 5, 
-                "set_potenial_params: potential paramter vector size must be >= 3");
+                "set_potenial_params: potential paramter vector size must be >= 5");
         param_A = params[0];
         param_B = params[1];
         param_C = params[2];

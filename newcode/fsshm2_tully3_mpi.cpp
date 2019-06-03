@@ -50,6 +50,7 @@ int output_step = 100;
 int Ntraj = 5000;
 int seed = 0;
 bool enable_hop = true;
+bool enable_deco = false;
 
 vector< complex<double> > lastevt;
 vector<double> eva(2);
@@ -79,6 +80,7 @@ inline bool argparse(int argc, char** argv)
         ("dt", po::value<double>(&dt), "single time step")
         ("seed", po::value<int>(&seed), "random seed")
         ("enable_hop", po::value<bool>(&enable_hop), "enable hopping")
+        ("enable_deco", po::value<bool>(&enable_deco), "enable decoherence")
         ;
     po::variables_map vm; 
     po::store(parse_command_line(argc, argv, desc, po::command_line_style::unix_style ^ po::command_line_style::allow_short), vm);
@@ -240,7 +242,26 @@ void fssh() {
                     }
                 }
                 // propagate
-                rk4.do_step(sys, state[itraj], istep * dt, dt);
+                if (enable_deco) {
+                    const double vxold = state[itraj][2].real();
+                    rk4.do_step(sys, state[itraj], istep * dt, dt);
+                    const double vxnew = state[itraj][2].real();
+                    // momentum flip
+                    if (vxold > 0.0 and vxnew < 0.0) {
+                        int s = static_cast<int>(state[itraj][6].real());
+                        if (s == 0) {
+                            state[itraj][4] = 1.0;
+                            state[itraj][5] = 0.0;
+                        }
+                        else {
+                            state[itraj][4] = 0.0;
+                            state[itraj][5] = 1.0;
+                        }
+                    }
+                }
+                else {
+                    rk4.do_step(sys, state[itraj], istep * dt, dt);
+                }
                 // save last evt
                 lastevt_save[itraj] = move(lastevt);
             }
@@ -397,7 +418,8 @@ void fssh() {
                 " sigma_x = ", sigma_x, " sigma_px = ", sigma_px, 
                 " init_y = ", init_y, " init_py = ", init_py, 
                 " sigma_y = ", sigma_y, " sigma_py = ", sigma_py, 
-                " init_s = ", init_s, " xwall_left = ", xwall_left, " xwall_right = ", xwall_right
+                " init_s = ", init_s, " xwall_left = ", xwall_left, " xwall_right = ", xwall_right,
+                " enable_hop = ", enable_hop, " enable_deco = ", enable_deco
                 );
         ioer::tabout('#', "t", "n0trans", "n0refl", "n1trans", "n1refl", "px0trans", "py0trans", "px0refl", "py0refl", "px1trans", "py1trans", "px1refl", "py1refl", "etot");
         for (int irec = 0; irec < Nrec; ++irec) {

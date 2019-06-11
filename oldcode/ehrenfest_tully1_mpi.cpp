@@ -10,20 +10,23 @@
 #include "misc/MPIer.hpp"
 #include "misc/timer.hpp"
 #include "boost/numeric/odeint.hpp"
+#include "boost/math/special_functions/erf.hpp"
 #include "boost/program_options.hpp"
-
-#include "2d_tully1_potential.hpp"
 
 using namespace std;
 namespace po = boost::program_options;
 using boost::numeric::odeint::runge_kutta4;
+using boost::math::erf;
 using state_t = vector< complex<double> >;
 
 // global const
 const complex<double> zI(0.0, 1.0);
 
-vector<double> potential_params;
-
+double A = 0.01;
+double B = 1.6;
+double C = 0.005;
+double D = 1.0;
+double W = 0.0;
 const double mass = 2000.0;
 double init_x = -5.0;
 double sigma_x = 0.5; 
@@ -33,14 +36,15 @@ double init_y = 0.0;
 double sigma_y = 0.5; 
 double init_py = 0.0;
 double sigma_py = 1.0; 
-double init_s = 1.0;
+double init_s = 0.0;
 double xwall_left = -10.0;
 double xwall_right = 10.0;
 int Nstep = 1000000;
 double dt = 0.1;
 int output_step = 100;
-int Ntraj = 5000;
+int Ntraj = 2000;
 int seed = 0;
+string output_mod = "init_px";
 
 vector< complex<double> > lastevt;
 vector<double> eva(2);
@@ -52,6 +56,11 @@ inline bool argparse(int argc, char** argv)
     po::options_description desc("Allowed options");
     desc.add_options()
         ("help", "produce help message")
+        ("A", po::value<double>(&A), "potential para A")
+        ("B", po::value<double>(&B), "potential para B")
+        ("C", po::value<double>(&C), "potential para C")
+        ("D", po::value<double>(&D), "potential para D")
+        ("W", po::value<double>(&W), "potential W")
         ("init_x", po::value<double>(&init_x), "init x")
         ("sigma_x", po::value<double>(&sigma_x), "init sigma x")
         ("init_px", po::value<double>(&init_px), "init px")
@@ -63,27 +72,126 @@ inline bool argparse(int argc, char** argv)
         ("init_s", po::value<double>(&init_s), "init surface")
         ("xwall_left", po::value<double>(&xwall_left), "wall on x direction to check end")
         ("xwall_right", po::value<double>(&xwall_right), "wall on x direction to check end")
-        ("potential_params", po::value< vector<double> >(&potential_params)->multitoken(), "potential_params vector")
         ("Ntraj", po::value<int>(&Ntraj), "# traj")
         ("Nstep", po::value<int>(&Nstep), "# step")
         ("output_step", po::value<int>(&output_step), "# step for output")
         ("dt", po::value<double>(&dt), "single time step")
         ("seed", po::value<int>(&seed), "random seed")
+        ("output_mod", po::value<string>(&output_mod), "output mode, init_s or init_px")
         ;
     po::variables_map vm; 
-    po::store(parse_command_line(argc, argv, desc, po::command_line_style::unix_style ^ po::command_line_style::allow_short), vm);
+    po::store(po::parse_command_line(argc, argv, desc), vm);
     po::notify(vm);    
-
-    if (not potential_params.empty()) {
-        set_potenial_params(potential_params);
-    }
-
     if (vm.count("help")) {
         std::cout << desc << "\n";
         return false;
     }
     return true;
 }
+
+inline double cal_phi(double y) {
+    return W * y;
+}
+
+inline double cal_der_phi(double y) {
+    return W;
+}
+
+vector< complex<double> > cal_H(const vector<double>& r) {
+    const double x = r[0];
+    const double y = r[1];
+    const complex<double> eip = exp(matrixop::IMAGIZ * cal_phi(y));
+
+    vector< complex<double> > H(4);
+    if (x >= 0.0 ) {
+        H[0+0*2] = A * (1.0 - exp(-B * x));
+    }
+    else {
+        H[0+0*2] = -A * (1.0 - exp(B * x));
+    }
+    H[1+1*2] = -H[0+0*2];
+    H[0+1*2] = C * exp(-D * x * x) * eip;
+    H[1+0*2] = conj(H[0+1*2]);
+    return H;
+}
+
+vector< complex<double> > cal_nablaHx(const vector<double>& r) {
+    const double x = r[0];
+    const double y = r[1];
+    const complex<double> eip = exp(matrixop::IMAGIZ * cal_phi(y));
+    vector< complex<double> > nablaHx(4);
+
+    if (x >= 0.0 ) {
+        nablaHx[0+0*2] = A * B * exp(-B * x);
+    }
+    else {
+        nablaHx[0+0*2] = A * B * exp(B * x);
+    }
+
+    nablaHx[1+1*2] = -nablaHx[0+0*2];
+    nablaHx[0+1*2] = -2 * C * D * x * exp(-D * x * x) * eip;
+    nablaHx[1+0*2] = conj(nablaHx[0+1*2]);
+
+    return nablaHx;
+}
+
+vector< complex<double> > cal_nablaHy(const vector<double>& r) {
+    const double x = r[0];
+    const double y = r[1];
+    const complex<double> eip = exp(matrixop::IMAGIZ * cal_phi(y));
+    const double der_phi = cal_der_phi(y);
+    vector< complex<double> > nablaHy(4);
+
+    nablaHy[0+0*2] = 0.0;
+    nablaHy[1+1*2] = -nablaHy[0+0*2];
+    nablaHy[0+1*2] = C * exp(-D * x * x) * eip * matrixop::IMAGIZ * der_phi;
+    nablaHy[1+0*2] = conj(nablaHy[0+1*2]);
+
+    return nablaHy;
+}
+
+void cal_info_nume(const vector<double>& r)
+{
+    // nume
+    vector< complex<double> > evt;
+    matrixop::hdiag(cal_H(r), eva, evt);
+    // correct phase
+    if (not lastevt.empty()) {
+        auto tmp = matrixop::matCmat(lastevt, evt, 2);
+        for (int j = 0; j < 2; ++j) {
+            complex<double> eip = tmp[j+j*2] / abs(tmp[j+j*2]);
+            for (int k = 0; k < 2; ++k) {
+                evt[k+j*2] /= eip;
+            }
+        }
+    }
+    // F, dc
+    dcx = matrixop::matCmatmat(evt, cal_nablaHx(r), evt, 2, 2);
+    dcy = matrixop::matCmatmat(evt, cal_nablaHy(r), evt, 2, 2);
+    Fx.assign(4, matrixop::ZEROZ);
+    Fy.assign(4, matrixop::ZEROZ);
+    for (int j = 0; j < 2; ++j) {
+        for (int k = 0; k < 2; ++k) {
+            Fx[j+k*2] = -dcx[j+k*2];
+            Fy[j+k*2] = -dcy[j+k*2];
+            if (j == k) {
+                dcx[j+k*2] = 0.0;
+                dcy[j+k*2] = 0.0;
+            }
+            else {
+                dcx[j+k*2] /= (eva[k] - eva[j]);
+                dcy[j+k*2] /= (eva[k] - eva[j]);
+            }
+        }
+    }
+    lastevt = move(evt);
+}
+
+void cal_info(const vector<double>& r)
+{
+    cal_info_nume(r);
+}
+
 
 void sys(const state_t& state, state_t& state_dot, const double /* t */) {
     // state = x, y, vx, vy, a00, a01, a10, a11
@@ -160,10 +268,7 @@ void ehrenfest() {
             // assign last evt
             lastevt = move(lastevt_save[itraj]);
             // calc info
-            cal_info_nume(
-                    vector<double> { state[itraj][0].real(), state[itraj][1].real() },
-                    Fx, Fy, dcx, dcy, eva, lastevt
-                    );
+            cal_info(vector<double> { state[itraj][0].real(), state[itraj][1].real() } );
             // propagate
             rk4.do_step(sys, state[itraj], istep * dt, dt);
             // save last evt
@@ -260,10 +365,12 @@ void ehrenfest() {
     // output
     if (MPIer::master) {
         // para & header
-        output_potential_param();
         ioer::info("# Ehrenfest para: ", " MPIsize = ", MPIer::size, 
                     " Ntraj = ", Ntraj, " Nstep = ", Nstep, " dt = ", dt, 
                     " mass = ", mass, 
+                    " A = ", A, " B = ", B, 
+                    " C = ", C, " D = ", D, 
+                    " W = ", W,
                     " init_x = ", init_x, " init_px = ", init_px, 
                     " sigma_x = ", sigma_x, " sigma_px = ", sigma_px, 
                     " init_y = ", init_y, " init_py = ", init_py, 

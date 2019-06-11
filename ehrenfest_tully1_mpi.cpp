@@ -20,8 +20,6 @@ using boost::math::erf;
 using state_t = vector< complex<double> >;
 
 // global const
-const complex<double> zzero(0.0, 0.0);
-const complex<double> zone(1.0, 0.0);
 const complex<double> zI(0.0, 1.0);
 
 double A = 0.01;
@@ -214,14 +212,14 @@ void sys(const state_t& state, state_t& state_dot, const double /* t */) {
     state_dot[2] = (a00 * Fx[0+0*2] + a01*Fx[1+0*2] + a10*Fx[0+1*2] + a11*Fx[1+1*2]) / mass;
     state_dot[3] = (a00 * Fy[0+0*2] + a01*Fy[1+0*2] + a10*Fy[0+1*2] + a11*Fy[1+1*2]) / mass;
     state_dot[4] = -a10 * vd01 + a01 * vd10;
-    state_dot[5] = -zI * -2.0 * A * a01 + (a00 - a11) * vd01;
-    state_dot[6] = -zI *  2.0 * A * a10 + (a11 - a00) * vd10;
+    state_dot[5] = -zI * 2.0 * eva[0] * a01 + (a00 - a11) * vd01;
+    state_dot[6] = -zI * 2.0 * eva[1] * a10 + (a11 - a00) * vd10;
     state_dot[7] = a10 * vd01 - a01 * vd10;
 }
 
 state_t init_state() {
     // state = x, y, vx, vy, a00, a01, a10, a11, s
-    state_t state(8, zzero);
+    state_t state(8, matrixop::ZEROZ);
     state[0].real(randomer::normal( init_x, sigma_x)); 
     state[1].real(randomer::normal( init_y, sigma_y)); 
     state[2].real(randomer::normal( init_px, sigma_px) / mass); 

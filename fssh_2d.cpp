@@ -56,7 +56,7 @@ string output_mod = "init_s";
 
 vector< complex<double> > lastevt;
 vector<double> eva(2);
-vector<double> Fx(2), Fy(2);
+vector<double> Fx(4), Fy(4);
 vector< complex<double> > dcx(4), dcy(4);
 
 inline bool argparse(int argc, char** argv) 
@@ -267,8 +267,12 @@ int hopper(state_t& state) {
     if (randomer::rand() < g) {
         // adjust momentum
         vector<double> n(2);
+        /*
         n[0] = (dcx[s+(1-s)*2] * (v[0] * dcx[1-s+s*2] + v[1] * dcy[1-s+s*2])).real();
         n[1] = (dcy[s+(1-s)*2] * (v[0] * dcx[1-s+s*2] + v[1] * dcy[1-s+s*2])).real();
+        */
+        n[0] = 1.0;
+        n[1] = 0.0;
 
         if (norm(n) > 1e-40) {
             vector<double> vn = component(v, n);

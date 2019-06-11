@@ -435,11 +435,14 @@ void fssh() {
 void check_surf() {
     for (double x = xwall_left - 1; x < xwall_right + 1; x += 0.01) {
         //cal_info_nume(vector<double> {x, 0.0}, Fx, Fy, dcx, dcy, eva, lastevt);
+        /*
         cal_info_anal(vector<double> {x, 0.0}, Fx, Fy, dcx, dcy, eva);
         ioer::tabout(x, eva, 
                 dcx[0+1*2].real(), dcx[0+1*2].imag(), abs(dcx[0+1*2]), 
                 dcy[0+1*2].real(), dcy[0+1*2].imag(), abs(dcy[0+1*2])
                 );
+                */
+        ioer::tabout(x, cal_theta(x), cal_der_theta(x), cal_der2_theta(x)); 
     }
 }
 

@@ -3,7 +3,7 @@ MPICXX = mpicxx
 OPT = -O3 
 LIBS += -lboost_program_options -lfftw3 -lopenblas -llapack -lpthread -lgfortran 
 
-all : exact_2d fssh_2d fssh_2d_showprob fssh_2d_a2d2 fssh_2d_a2d2_rechop ehrenfest exact_2d_tully1 fssh_2d_tully1_mpi ehrenfest_tully1 ehrenfest_tully1_mpi
+all : exact_2d fssh_2d fssh_2d_showprob fssh_2d_a2d2 fssh_2d_a2d2_rechop ehrenfest exact_2d_tully1 fssh_2d_tully1_mpi ehrenfest_tully1 ehrenfest_tully1_mpi ehrenfest_mpi fssh_2d_hh
 
 exact_2d: exact_2d.cpp 
 	$(CXX) $(OPT) $< -o $@ $(LIBS)
@@ -34,3 +34,9 @@ ehrenfest_tully1: ehrenfest_tully1.cpp
 
 ehrenfest_tully1_mpi: ehrenfest_tully1_mpi.cpp 
 	$(MPICXX) $(OPT) $< -o $@ $(LIBS)
+
+ehrenfest_mpi: ehrenfest_mpi.cpp 
+	$(MPICXX) $(OPT) $< -o $@ $(LIBS)
+
+fssh_2d_hh: fssh_2d_hh.cpp 
+	$(CXX) $(OPT) $< -o $@ $(LIBS)

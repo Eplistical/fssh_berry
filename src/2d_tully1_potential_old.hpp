@@ -41,21 +41,18 @@ namespace {
         param_W = params[4];
     }
 
-    double cal_phi(const vector<double>& r) {
-        const double y = r[1];
+    double cal_phi(double y) {
         return param_W * y;
     }
 
-    vector<double> cal_der_phi(const vector<double>& r) {
-        vector<double> der_phi(r.size(), 0.0);
-        der_phi[1] = param_W;
-        return der_phi;
+    double cal_der_phi(double y) {
+        return param_W;
     }
 
     vector< complex<double> > cal_H(const vector<double>& r) {
         const double x = r[0];
         const double y = r[1];
-        const complex<double> eip = exp(matrixop::IMAGIZ * cal_phi(r));
+        const complex<double> eip = exp(matrixop::IMAGIZ * cal_phi(y));
 
         vector< complex<double> > H(4);
         if (x >= 0.0) {
@@ -73,8 +70,7 @@ namespace {
     vector< complex<double> > cal_nablaHx(const vector<double>& r) {
         const double x = r[0];
         const double y = r[1];
-        const complex<double> eip = exp(matrixop::IMAGIZ * cal_phi(r));
-        const vector<double> der_phi = cal_der_phi(r);
+        const complex<double> eip = exp(matrixop::IMAGIZ * cal_phi(y));
         vector< complex<double> > nablaHx(4);
 
         if (x >= 0.0 ) {
@@ -83,24 +79,24 @@ namespace {
         else {
             nablaHx[0+0*2] = param_A * param_B * exp(param_B * x);
         }
-        nablaHx[1+1*2] = -nablaHx[0+0*2];
 
-        nablaHx[0+1*2] = eip * (-2 * param_C * param_D * x * exp(-param_D * x * x) 
-                                + matrixop::IMAGIZ * param_C * exp(-param_D * x * x) * der_phi[0]);
+        nablaHx[1+1*2] = -nablaHx[0+0*2];
+        nablaHx[0+1*2] = -2 * param_C * param_D * x * exp(-param_D * x * x) * eip;
         nablaHx[1+0*2] = conj(nablaHx[0+1*2]);
+
         return nablaHx;
     }
 
     vector< complex<double> > cal_nablaHy(const vector<double>& r) {
         const double x = r[0];
         const double y = r[1];
-        const complex<double> eip = exp(matrixop::IMAGIZ * cal_phi(r));
-        const vector<double> der_phi = cal_der_phi(r);
+        const complex<double> eip = exp(matrixop::IMAGIZ * cal_phi(y));
+        const double der_phi = cal_der_phi(y);
         vector< complex<double> > nablaHy(4);
 
         nablaHy[0+0*2] = 0.0;
         nablaHy[1+1*2] = -nablaHy[0+0*2];
-        nablaHy[0+1*2] = eip * (0.0 + matrixop::IMAGIZ * param_C * exp(-param_D * x * x) * der_phi[1]);
+        nablaHy[0+1*2] = param_C * exp(-param_D * x * x) * eip * matrixop::IMAGIZ * der_phi;
         nablaHy[1+0*2] = conj(nablaHy[0+1*2]);
 
         return nablaHy;

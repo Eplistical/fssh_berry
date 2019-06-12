@@ -22,7 +22,7 @@ namespace {
     double param_W = 0.0;
 
     void output_potential_param() {
-        ioer::info("# 2D flat potential parameters: ", 
+        ioer::info("# 2D flat potential [with phi = W * y] parameters: ", 
                     " A = ", param_A,
                     " B = ", param_B,
                     " W = ", param_W);

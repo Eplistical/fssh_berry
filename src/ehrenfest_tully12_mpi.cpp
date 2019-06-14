@@ -12,7 +12,7 @@
 #include "boost/numeric/odeint.hpp"
 #include "boost/program_options.hpp"
 
-#include "2d_tully1_potential.hpp"
+#include "2d_tully1_potential_phixplusy.hpp"
 
 using namespace std;
 namespace po = boost::program_options;

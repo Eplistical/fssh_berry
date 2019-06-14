@@ -1,5 +1,5 @@
-#ifndef _2D_TULLY1_POTENTIAL_HPP
-#define _2D_TULLY1_POTENTIAL_HPP
+#ifndef _2D_TULLY1_POTENTIAL_PHIXPLUSY_HPP
+#define _2D_TULLY1_POTENTIAL_PHIXPLUSY_HPP
 
 #include <cstdlib>
 #include <cmath>
@@ -23,7 +23,7 @@ namespace {
     double param_W = 0.0;
 
     void output_potential_param() {
-        ioer::info("# 2D Tully1 potential [with phi = W * y] parameters: ", 
+        ioer::info("# 2D Tully1 potential [with phi = W * (x + y)] parameters: ", 
                     " A = ", param_A,
                     " B = ", param_B,
                     " C = ", param_C,
@@ -42,12 +42,14 @@ namespace {
     }
 
     double cal_phi(const vector<double>& r) {
+        const double x = r[0];
         const double y = r[1];
-        return param_W * y;
+        return param_W * (x + y);
     }
 
     vector<double> cal_der_phi(const vector<double>& r) {
         vector<double> der_phi(r.size(), 0.0);
+        der_phi[0] = param_W;
         der_phi[1] = param_W;
         return der_phi;
     }

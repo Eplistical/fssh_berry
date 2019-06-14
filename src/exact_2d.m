@@ -175,6 +175,23 @@ function exact_2d(r, k, init_s, fID)
                 psiad_k(:,:,2) = fftshift(fft2(psiad(:,:,2)));
                 psiad_k = psiad_k / sqrt(sum(sum(sum(abs(psiad_k).^2))));
 
+
+                nad1t = sum(sum(abs(psiad_k(:,round(M/2)+1:M,1)).^2)) + 1e-16;
+                nad1r = sum(sum(abs(psiad_k(:,1:round(M/2),1)).^2)) + 1e-16;
+                nad2t = sum(sum(abs(psiad_k(:,round(M/2)+1:M,2)).^2)) + 1e-16;
+                nad2r = sum(sum(abs(psiad_k(:,1:round(M/2),2)).^2)) + 1e-16;
+
+                pad1xt = sum(sum(abs(psiad_k(:,round(M/2)+1:M,1)).^2 .* meshkx(round(M/2)+1:M))) / nad1t;
+                pad1xr = sum(sum(abs(psiad_k(:,1:round(M/2):M,1)).^2 .* meshkx(1:round(M/2)))) / nad1r;
+                pad1yt = sum(sum(abs(psiad_k(:,round(M/2)+1:M,1)).^2 .* meshky(round(M/2)+1:M))) / nad1t;
+                pad1yr = sum(sum(abs(psiad_k(:,1:round(M/2):M,1)).^2 .* meshky(1:round(M/2)))) / nad1r;
+
+                pad2xt = sum(sum(abs(psiad_k(:,round(M/2)+1:M,2)).^2 .* meshkx(round(M/2)+1:M))) / nad2t;
+                pad2xr = sum(sum(abs(psiad_k(:,1:round(M/2):M,2)).^2 .* meshkx(1:round(M/2)))) / nad2r;
+                pad2yt = sum(sum(abs(psiad_k(:,round(M/2)+1:M,2)).^2 .* meshky(round(M/2)+1:M))) / nad2t;
+                pad2yr = sum(sum(abs(psiad_k(:,1:round(M/2):M,2)).^2 .* meshky(1:round(M/2)))) / nad2r;
+
+                %{
                 normad_k1 = sum(sum(abs(psiad_k(:,:,1)).^2)) + 1e-16;
                 normad_k2 = sum(sum(abs(psiad_k(:,:,2)).^2)) + 1e-16;
 
@@ -182,6 +199,7 @@ function exact_2d(r, k, init_s, fID)
                 pad1y = sum(sum(abs(psiad_k(:,:,1)).^2 .* meshky)) / normad_k1;
                 pad2x = sum(sum(abs(psiad_k(:,:,2)).^2 .* meshkx)) / normad_k2;
                 pad2y = sum(sum(abs(psiad_k(:,:,2)).^2 .* meshky)) / normad_k2;
+                %}
             end
 
             % output
@@ -197,16 +215,20 @@ function exact_2d(r, k, init_s, fID)
                                     xI, yI, kxI, kyI, sigmax, sigmay, param_W, init_s, c1, c2);
                 fprintf(fID, '# L = %8.4f M = %8d dt = %8.4f Nstep = %8d tgraph = %8d\n', ...
                                     L, M, dt, Nstep, tgraph);
-                fprintf(fID, '#%9s%16s%16s%16s%16s%16s%16s%16s\n', ...
-                                't', 'n0', 'n1', 'px0', 'px1', 'py0', 'py1', 'Etot');
+                fprintf(fID, '#%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s%16s\n', ...
+                                't', ...
+                                'n0trans', 'n0refl', 'n1trans', 'n1refl', ...
+                                'px0trans', 'py0trans', 'px0refl', 'py0refl', ...
+                                'px1trans', 'py1trans', 'px1refl', 'py1refl', ...
+                                'Etot');
             end
 
             if enable_adiab == true
-                fprintf(fID, '#%16.10f%16.10f%16.10f%16.10f%16.10f%16.10f%16.10f%16.10f\n', ...
+                fprintf(fID, '#%16.10f%16.10f%16.10f%16.10f%16.10f%16.10f%16.10f%16.10f%16.10f%16.10f%16.10f%16.10f%16.10f%16.10f\n', ...
                             t*dt, ...
-                            sum(sum(sum(abs(psiad(:,:,1).^2)))), ...
-                            sum(sum(sum(abs(psiad(:,:,2).^2)))), ...
-                            pad1x, pad2x, pad1y, pad2y, ...
+                            nad1t, nad1r, nad2t, nad2r, ...
+                            pad1xt, pad1yt, pad1xr, pad1yr, ...
+                            pad2xt, pad2yt, pad2xr, pad2yr, ...
                             KE + PE ...
                             );
             else

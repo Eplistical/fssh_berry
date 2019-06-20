@@ -15,10 +15,10 @@ function exact_2d(r, k, init_s, fID)
 
     N = 2;
     L = 16;
-    M = 256;                    
+    M = 256; 
 
     dt = 0.1;
-    Nstep = 50000; 
+    Nstep = 15000; 
     tgraph = 100;
     mass = 1000;
 
@@ -51,7 +51,7 @@ function exact_2d(r, k, init_s, fID)
             x = x0(j);
             y = y0(k);
 
-            param_A = 3.0;
+            param_A = 0.1;
             param_B = 3.0;
             param_W = 0.0;
             theta = pi / 2 * (erf(param_B * x0(j)) + 1);
@@ -127,6 +127,7 @@ function exact_2d(r, k, init_s, fID)
         psi0(:,:,2) = c2 * exp(1i*(kxI*meshx + kyI*meshy)) .* exp(-(meshx-xI).^2/sigmax^2 - (meshy-yI).^2/sigmay^2);
         psi0 = psi0 / sqrt(sum(sum(sum(abs(psi0).^2))));
     end
+
     % psim & psi_k_m -- for plot
     psi0_k(:,:,1) = fftshift(fft2(psi0(:,:,1)));
     psi0_k(:,:,2) = fftshift(fft2(psi0(:,:,2)));
@@ -181,15 +182,15 @@ function exact_2d(r, k, init_s, fID)
                 nad2t = sum(sum(abs(psiad_k(:,round(M/2)+1:M,2)).^2)) + 1e-16;
                 nad2r = sum(sum(abs(psiad_k(:,1:round(M/2),2)).^2)) + 1e-16;
 
-                pad1xt = sum(sum(abs(psiad_k(:,round(M/2)+1:M,1)).^2 .* meshkx(round(M/2)+1:M))) / nad1t;
-                pad1xr = sum(sum(abs(psiad_k(:,1:round(M/2):M,1)).^2 .* meshkx(1:round(M/2)))) / nad1r;
-                pad1yt = sum(sum(abs(psiad_k(:,round(M/2)+1:M,1)).^2 .* meshky(round(M/2)+1:M))) / nad1t;
-                pad1yr = sum(sum(abs(psiad_k(:,1:round(M/2):M,1)).^2 .* meshky(1:round(M/2)))) / nad1r;
+                pad1xt = sum(sum(abs(psiad_k(:,round(M/2)+1:M,1)).^2 .* meshkx(:,round(M/2)+1:M))) / nad1t;
+                pad1xr = sum(sum(abs(psiad_k(:,1:round(M/2),1)).^2 .* meshkx(:,1:round(M/2)))) / nad1r;
+                pad1yt = sum(sum(abs(psiad_k(:,round(M/2)+1:M,1)).^2 .* meshky(:,round(M/2)+1:M))) / nad1t;
+                pad1yr = sum(sum(abs(psiad_k(:,1:round(M/2),1)).^2 .* meshky(:,1:round(M/2)))) / nad1r;
 
-                pad2xt = sum(sum(abs(psiad_k(:,round(M/2)+1:M,2)).^2 .* meshkx(round(M/2)+1:M))) / nad2t;
-                pad2xr = sum(sum(abs(psiad_k(:,1:round(M/2):M,2)).^2 .* meshkx(1:round(M/2)))) / nad2r;
-                pad2yt = sum(sum(abs(psiad_k(:,round(M/2)+1:M,2)).^2 .* meshky(round(M/2)+1:M))) / nad2t;
-                pad2yr = sum(sum(abs(psiad_k(:,1:round(M/2):M,2)).^2 .* meshky(1:round(M/2)))) / nad2r;
+                pad2xt = sum(sum(abs(psiad_k(:,round(M/2)+1:M,2)).^2 .* meshkx(:,round(M/2)+1:M))) / nad2t;
+                pad2xr = sum(sum(abs(psiad_k(:,1:round(M/2),2)).^2 .* meshkx(:,1:round(M/2)))) / nad2r;
+                pad2yt = sum(sum(abs(psiad_k(:,round(M/2)+1:M,2)).^2 .* meshky(:,round(M/2)+1:M))) / nad2t;
+                pad2yr = sum(sum(abs(psiad_k(:,1:round(M/2),2)).^2 .* meshky(:,1:round(M/2)))) / nad2r;
 
                 %{
                 normad_k1 = sum(sum(abs(psiad_k(:,:,1)).^2)) + 1e-16;
@@ -282,11 +283,12 @@ function exact_2d(r, k, init_s, fID)
     end
 
     if enable_adiab == true
-        fprintf(fID, '#%16.10f%16.10f%16.10f%16.10f%16.10f%16.10f%16.10f%16.10f\n', ...
+        fprintf(fID, '#%16.10f%16.10f%16.10f%16.10f%16.10f%16.10f%16.10f%16.10f%16.10f%16.10f%16.10f%16.10f%16.10f%16.10f\n', ...
                     kxI, ...
-                    sum(sum(sum(abs(psiad(:,:,1).^2)))), ...
-                    sum(sum(sum(abs(psiad(:,:,2).^2)))), ...
-                    pad1x, pad2x, pad1y, pad2y ...
+                    nad1t, nad1r, nad2t, nad2r, ...
+                    pad1xt, pad1yt, pad1xr, pad1yr, ...
+                    pad2xt, pad2yt, pad2xr, pad2yr, ...
+                    KE + PE ...
                     );
     else
         fprintf(fID, '%16.10f%16.10f%16.10f%16.10f%16.10f%16.10f%16.10f\n', ...

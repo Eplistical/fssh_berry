@@ -14,6 +14,7 @@
 #include "boost/numeric/odeint.hpp"
 #include "boost/program_options.hpp"
 
+#include "2d_fssh_rescaling.hpp"
 #include "2d_flat_potential_phixplusy.hpp"
 
 enum {
@@ -146,45 +147,10 @@ int hopper(state_t& state) {
     // hop
     if (randomer::rand() < g) {
         // generate rescaling direction
-        vector<double> n(2);
-        if (rescaling_alg == "x") {
-            // x direction
-            n[0] = 1.0;
-            n[1] = 0.0;
-        }
-        else if (rescaling_alg == "p") {
-            // p direction
-            n[0] = v[0];
-            n[1] = v[1];
-        }
-        else if (rescaling_alg == "m1") {
-            // Method #1 : real part of Berry force
-            n[0] = (dcx[s+(1-s)*2] * (v[0] * dcx[1-s+s*2] + v[1] * dcy[1-s+s*2])).real();
-            n[1] = (dcy[s+(1-s)*2] * (v[0] * dcx[1-s+s*2] + v[1] * dcy[1-s+s*2])).real();
-        }
-        else if (rescaling_alg == "m2") {
-            // Method #2
-            const int from = s;
-            const int to = 1 - s;
-            const vector<double> dcR { dcx[from+to*2].real(), dcy[from+to*2].real() };
-            const vector<double> dcI { dcx[from+to*2].imag(), dcy[from+to*2].imag() };
-            const double diff_norm2 = norm2(dcR) - norm2(dcI);
-            const double twice_eta0 = std::atan(-2 * (dcR[0] * dcI[0] + dcR[1] * dcI[1]) / diff_norm2);
-            double eta;
-            if (cos(twice_eta0) * diff_norm2 > 0.0) {
-                eta = 0.5 * twice_eta0;
-            }
-            else {
-                eta = 0.5 * twice_eta0 + 0.5 * M_PI;
-            }
-            const complex<double> eieta = exp(matrixop::IMAGIZ * eta);
-            n[0] = (eieta * dcx[from+to*2]).real();
-            n[1] = (eieta * dcy[from+to*2]).real();
-        }
-        else {
-            misc::crasher::confirm(false, "hopper: Invalid rescaling_alg");
-        }
-
+        const int from = s;
+        const int to = 1 - s;
+        vector<double> n = get_rescaling_direction(rescaling_alg, r, v, c, from, to,
+                                                        dcx, dcy, Fx, Fy, eva);
         // rescale momentum
         if (norm(n) > 1e-40) {
             vector<double> vn = component(v, n);

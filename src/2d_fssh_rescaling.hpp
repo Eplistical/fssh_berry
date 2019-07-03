@@ -25,6 +25,8 @@ namespace {
             const int from, const int to,
             const vector< complex<double> >& dcx,
             const vector< complex<double> >& dcy,
+            const vector< complex<double> >& dx_dcx,
+            const vector< complex<double> >& dy_dcy,
             const vector< complex<double> >& Fx,
             const vector< complex<double> >& Fy,
             const vector<double>& eva
@@ -65,30 +67,37 @@ namespace {
         }
         else if (rescaling_alg == "a1") {
             /*
-             * additional ansatz 1
              *  1->2:
-             *  hbar/(E2-E1) * Re[d12 * (d21 \dot (hbar * p / m + (F22 - F11) / (||d12*d21||)))]
-             *  ~ Re[d12 * (d21 \dot (hbar * p / m + (F22 - F11)/ (||d12*d21||)))]
+             *  dE = E2 - E1
+             *  dF = F2 - F1
+             *
+             *  n = Re(g) = hbar / |d'*d| * Re[(\sum_alpha d(d21^alpha) / (dr^alpha)) * d12)
+             *
              */
-            const double normd = sqrt(pow(abs(dcx[to+from*2]), 2) + pow(abs(dcy[to+from*2]), 2));
-            const double DeltaFx = Fx[to+to*2].real() - Fx[from+from*2].real();
-            const double DeltaFy = Fy[to+to*2].real() - Fy[from+from*2].real();
-            n[0] = (dcx[to+from*2] * (dcx[from+to*2] * (v[0] + DeltaFx / normd) + dcy[from+to*2] * (v[1] + DeltaFy / normd))).real();
-            n[1] = (dcy[to+from*2] * (dcx[from+to*2] * (v[0] + DeltaFx / normd) + dcy[from+to*2] * (v[1] + DeltaFy / normd))).real();
-            
+            const double norm2d = pow(abs(dcx[to+from*2]), 2) + pow(abs(dcy[to+from*2]), 2);
+            const double dFx = Fx[to+to*2].real() - Fx[from+from*2].real();
+            const double dFy = Fy[to+to*2].real() - Fy[from+from*2].real();
+            const double dE = eva[to] - eva[from];
+
+            n[0] = ((dx_dcx[to+from*2] + dy_dcy[to+from*2]) * dcx[from+to*2]).real();
+            n[1] = ((dx_dcx[to+from*2] + dy_dcy[to+from*2]) * dcy[from+to*2]).real();
         }
         else if (rescaling_alg == "a2") {
             /*
-             * additional ansatz 2
              *  1->2:
-             *  hbar/(E2-E1) * Re[d12 * (d21 \dot (hbar * p / m - (F22 - F11)/ (||d12*d21||)))]
-             *  ~ Re[d12 * (d21 \dot (hbar * p / m - (F22 - F11)/ (||d12*d21||)))]
+             *  dE = E2 - E1
+             *  dF = F2 - F1
+             *
+             *  n = Im(g) = hbar / |d'*d| * Re[(\sum_alpha d(d21^alpha) / (dr^alpha)) * d12)
+             *
              */
-            const double normd = sqrt(pow(abs(dcx[to+from*2]), 2) + pow(abs(dcy[to+from*2]), 2));
-            const double DeltaFx = Fx[to+to*2].real() - Fx[from+from*2].real();
-            const double DeltaFy = Fy[to+to*2].real() - Fy[from+from*2].real();
-            n[0] = (dcx[to+from*2] * (dcx[from+to*2] * (v[0] - DeltaFx / normd) + dcy[from+to*2] * (v[1] - DeltaFy / normd))).real();
-            n[1] = (dcy[to+from*2] * (dcx[from+to*2] * (v[0] - DeltaFx / normd) + dcy[from+to*2] * (v[1] - DeltaFy / normd))).real();
+            const double norm2d = pow(abs(dcx[to+from*2]), 2) + pow(abs(dcy[to+from*2]), 2);
+            const double dFx = Fx[to+to*2].real() - Fx[from+from*2].real();
+            const double dFy = Fy[to+to*2].real() - Fy[from+from*2].real();
+            const double dE = eva[to] - eva[from];
+
+            n[0] = ((dx_dcx[to+from*2] + dy_dcy[to+from*2]) * dcx[from+to*2]).imag();
+            n[1] = ((dx_dcx[to+from*2] + dy_dcy[to+from*2]) * dcy[from+to*2]).imag();
         }
         else {
             misc::crasher::confirm(false, "hopper: Invalid rescaling_alg");

@@ -15,7 +15,7 @@
 #include "boost/program_options.hpp"
 
 #include "2d_fssh_rescaling.hpp"
-#include "2d_tully1_potential.hpp"
+#include "2d_flat_potential.hpp"
 
 enum {
     HOP_UP,
@@ -33,8 +33,8 @@ const complex<double> zI(0.0, 1.0);
 
 vector<double> potential_params;
 
-const double mass = 2000.0;
-double init_x = -5.0;
+const double mass = 1000.0;
+double init_x = -3.0;
 double sigma_x = 0.5; 
 double init_px = 20.0;
 double sigma_px = 1.0; 
@@ -151,7 +151,8 @@ int hopper(state_t& state) {
         const int from = s;
         const int to = 1 - s;
         vector<double> n = get_rescaling_direction(rescaling_alg, r, v, c, from, to,
-                                                        dcx, dcy, dx_dcx, dy_dcy, Fx, Fy, eva);
+                                                        dcx, dcy, dx_dcx, dy_dcy,
+                                                        Fx, Fy, eva);
         // rescale momentum
         if (norm(n) > 1e-40) {
             vector<double> vn = component(v, n);
@@ -213,9 +214,9 @@ void fssh() {
                 // assign last evt
                 lastevt = move(lastevt_save[itraj]);
                 // calc info
-                cal_info_nume(
+                cal_info_anal(
                         vector<double> { state[itraj][0].real(), state[itraj][1].real() },
-                        Fx, Fy, dcx, dcy, eva, lastevt
+                        Fx, Fy, dcx, dcy, dx_dcx, dy_dcy, eva, lastevt
                         );
                 // hopper
                 if (enable_hop) {

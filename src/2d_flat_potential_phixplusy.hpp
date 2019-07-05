@@ -19,21 +19,25 @@ namespace {
 
     double param_A = 0.10;
     double param_B = 3.0;
-    double param_W = 0.0;
+    double param_Wx = 0.0;
+    double param_Wy = 0.0;
 
     void output_potential_param() {
-        ioer::info("# 2D flat potential [with phi = W * (x + y)] parameters: ", 
+        ioer::info("# 2D flat potential [with phi = Wx * x + Wy * y] parameters: ", 
                     " A = ", param_A,
                     " B = ", param_B,
-                    " W = ", param_W);
+                    " Wx = ", param_Wx,
+                    " Wy = ", param_Wy
+                    );
     }
 
     void set_potenial_params(const std::vector<double>& params) {
-        misc::crasher::confirm(params.size() >= 3, 
-                "set_potenial_params: potential paramter vector size must be >= 3");
+        misc::crasher::confirm(params.size() >= 4, 
+                "set_potenial_params: potential paramter vector size must be >= 4");
         param_A = params[0];
         param_B = params[1];
-        param_W = params[2];
+        param_Wx = params[2];
+        param_Wy = params[3];
     }
 
     double cal_theta(const vector<double>& r) {
@@ -62,13 +66,13 @@ namespace {
     double cal_phi(const vector<double>& r) {
         const double x = r[0];
         const double y = r[1];
-        return param_W * (x + y);
+        return param_Wx * x + param_Wy * y;
     }
 
     vector<double> cal_der_phi(const vector<double>& r) {
         vector<double> der_phi(r.size(), 0.0);
-        der_phi[0] = param_W;
-        der_phi[1] = param_W;
+        der_phi[0] = param_Wx;
+        der_phi[1] = param_Wy;
         return der_phi;
     }
 

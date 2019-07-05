@@ -68,36 +68,38 @@ namespace {
         else if (rescaling_alg == "a1") {
             /*
              *  1->2:
-             *  dE = E2 - E1
-             *  dF = F2 - F1
-             *
-             *  n = Re(g) = hbar / |d'*d| * Re[(\sum_alpha d(d21^alpha) / (dr^alpha)) * d12)
+             *  n = Re(g) = hbar / |d'*d| * Re[(\sum_beta d(d21^beta) / (dr^beta)) * d12)
              *
              */
-            const double norm2d = pow(abs(dcx[to+from*2]), 2) + pow(abs(dcy[to+from*2]), 2);
-            const double dFx = Fx[to+to*2].real() - Fx[from+from*2].real();
-            const double dFy = Fy[to+to*2].real() - Fy[from+from*2].real();
-            const double dE = eva[to] - eva[from];
-
             n[0] = ((dx_dcx[to+from*2] + dy_dcy[to+from*2]) * dcx[from+to*2]).real();
             n[1] = ((dx_dcx[to+from*2] + dy_dcy[to+from*2]) * dcy[from+to*2]).real();
         }
         else if (rescaling_alg == "a2") {
             /*
              *  1->2:
-             *  dE = E2 - E1
-             *  dF = F2 - F1
-             *
-             *  n = Im(g) = hbar / |d'*d| * Re[(\sum_alpha d(d21^alpha) / (dr^alpha)) * d12)
+             *  n = Im(g) = hbar / |d'*d| * Re[(\sum_beta d(d21^beta) / (dr^beta)) * d12)
              *
              */
-            const double norm2d = pow(abs(dcx[to+from*2]), 2) + pow(abs(dcy[to+from*2]), 2);
-            const double dFx = Fx[to+to*2].real() - Fx[from+from*2].real();
-            const double dFy = Fy[to+to*2].real() - Fy[from+from*2].real();
-            const double dE = eva[to] - eva[from];
-
             n[0] = ((dx_dcx[to+from*2] + dy_dcy[to+from*2]) * dcx[from+to*2]).imag();
             n[1] = ((dx_dcx[to+from*2] + dy_dcy[to+from*2]) * dcy[from+to*2]).imag();
+        }
+        else if (rescaling_alg == "a3") {
+            /*
+             *  1->2:
+             *  n = Re(g') = hbar / |d'*d| * Re[(\sum_beta conj(d(d21^beta) / (dr^beta))) * d12)
+             *
+             */
+            n[0] = (conj(dx_dcx[to+from*2] + dy_dcy[to+from*2]) * dcx[from+to*2]).real();
+            n[1] = (conj(dx_dcx[to+from*2] + dy_dcy[to+from*2]) * dcy[from+to*2]).real();
+        }
+        else if (rescaling_alg == "a4") {
+            /*
+             *  1->2:
+             *  n = Im(conj(g)) = hbar / |d'*d| * Im[(\sum_beta conj(d(d21^beta) / (dr^beta))) * d12)
+             *
+             */
+            n[0] = (conj(dx_dcx[to+from*2] + dy_dcy[to+from*2]) * dcx[from+to*2]).imag();
+            n[1] = (conj(dx_dcx[to+from*2] + dy_dcy[to+from*2]) * dcy[from+to*2]).imag();
         }
         else {
             misc::crasher::confirm(false, "hopper: Invalid rescaling_alg");

@@ -51,6 +51,7 @@ int output_step = 100;
 int Ntraj = 5000;
 int seed = 0;
 bool enable_hop = true;
+bool enable_berry_force = true;
 string rescaling_alg = "x";
 
 vector< complex<double> > lastevt;
@@ -83,6 +84,7 @@ inline bool argparse(int argc, char** argv)
         ("rescaling_alg", po::value<string>(&rescaling_alg), "rescaling algorithm")
         ("seed", po::value<int>(&seed), "random seed")
         ("enable_hop", po::value<bool>(&enable_hop), "enable hopping")
+        ("enable_berry_force", po::value<bool>(&enable_berry_force), "enable Berry force")
         ;
     po::variables_map vm; 
     po::store(parse_command_line(argc, argv, desc, po::command_line_style::unix_style ^ po::command_line_style::allow_short), vm);
@@ -123,9 +125,12 @@ void sys(const state_t& state, state_t& state_dot, const double /* t */) {
     vector< complex<double> > c { state[4], state[5] };
     int s = static_cast<int>(state[6].real());
     // extra Berry Force
-    double Fx_berry, Fy_berry;
-    Fx_berry = 2 * (dcx[s+(1-s)*2] * (v[0] * dcx[1-s+s*2] + v[1] * dcy[1-s+s*2])).imag();
-    Fy_berry = 2 * (dcy[s+(1-s)*2] * (v[0] * dcx[1-s+s*2] + v[1] * dcy[1-s+s*2])).imag();
+    double Fx_berry = 0.0;
+    double Fy_berry = 0.0;
+    if (enable_berry_force) {
+        Fx_berry = 2 * (dcx[s+(1-s)*2] * (v[0] * dcx[1-s+s*2] + v[1] * dcy[1-s+s*2])).imag();
+        Fy_berry = 2 * (dcy[s+(1-s)*2] * (v[0] * dcx[1-s+s*2] + v[1] * dcy[1-s+s*2])).imag();
+    }
     // state_dot
     state_dot[0] = v[0];
     state_dot[1] = v[1];
@@ -197,6 +202,7 @@ void fssh() {
     double px0trans = 0.0, px0refl = 0.0, px1trans = 0.0, px1refl = 0.0;
     double py0trans = 0.0, py0refl = 0.0, py1trans = 0.0, py1refl = 0.0;
     double KE = 0.0, PE = 0.0;
+    double c0sq = 0.0, c1sq = 0.0;
     double hopup = 0.0, hopdn = 0.0, hopfr = 0.0, hoprj = 0.0;
     vector<double> hop_count(my_Ntraj, 0.0);
     // recorders
@@ -205,6 +211,7 @@ void fssh() {
     vector<double> px0trans_arr(Nrec), px0refl_arr(Nrec), px1trans_arr(Nrec), px1refl_arr(Nrec);
     vector<double> py0trans_arr(Nrec), py0refl_arr(Nrec), py1trans_arr(Nrec), py1refl_arr(Nrec);
     vector<double> KE_arr(Nrec), PE_arr(Nrec);
+    vector<double> c0sq_arr(Nrec), c1sq_arr(Nrec);
     vector<double> hop_count_summary(50, 0.0);
     // main loop
     vector< vector< complex<double> > > lastevt_save(my_Ntraj);
@@ -305,6 +312,16 @@ void fssh() {
                     );
             KE_arr[irec] = KE;
             PE_arr[irec] = PE;
+            // csq
+            c0sq = c1sq = 0.0;
+            for_each(state.begin(), state.end(), 
+                    [&c0sq, &c1sq] (const state_t& st) {
+                        c0sq += pow(abs(st[4]), 2);
+                        c1sq += pow(abs(st[5]), 2);
+                    }
+                    );
+            c0sq_arr[irec] = c0sq;
+            c1sq_arr[irec] = c1sq;
             // check end
             bool end_flag = all_of(state.begin(), state.end(), check_end);
             if (end_flag == true) {
@@ -326,6 +343,10 @@ void fssh() {
 
                 fill(KE_arr.begin() + irec + 1, KE_arr.end(), KE);
                 fill(PE_arr.begin() + irec + 1, PE_arr.end(), PE);
+
+                fill(c0sq_arr.begin() + irec + 1, c0sq_arr.end(), c0sq);
+                fill(c1sq_arr.begin() + irec + 1, c1sq_arr.end(), c1sq);
+
                 break;
             }
         }
@@ -342,7 +363,7 @@ void fssh() {
                     n0trans_arr, n0refl_arr, n1trans_arr, n1refl_arr, 
                     px0trans_arr, px0refl_arr, px1trans_arr, px1refl_arr, 
                     py0trans_arr, py0refl_arr, py1trans_arr, py1refl_arr, 
-                    KE_arr, PE_arr,
+                    KE_arr, PE_arr, c0sq_arr, c1sq_arr,
                     hopup, hopdn, hopfr, hoprj, hop_count_summary
                     );
         }
@@ -367,6 +388,9 @@ void fssh() {
             MPIer::recv(r, buf); KE_arr += buf;
             MPIer::recv(r, buf); PE_arr += buf;
 
+            MPIer::recv(r, buf); c0sq_arr += buf;
+            MPIer::recv(r, buf); c1sq_arr += buf;
+
             double dbuf;
             MPIer::recv(r, dbuf); hopup += dbuf;
             MPIer::recv(r, dbuf); hopdn += dbuf;
@@ -388,10 +412,11 @@ void fssh() {
                 " init_y = ", init_y, " init_py = ", init_py, 
                 " sigma_y = ", sigma_y, " sigma_py = ", sigma_py, 
                 " init_s = ", init_s, " xwall_left = ", xwall_left, " xwall_right = ", xwall_right,
-                " enable_hop = ", enable_hop, " rescaling_alg = ", rescaling_alg,
+                " enable_hop = ", enable_hop, " enable_berry_force = ", enable_berry_force, 
+                " rescaling_alg = ", rescaling_alg,
                 ""
                 );
-        ioer::tabout('#', "t", "n0trans", "n0refl", "n1trans", "n1refl", "px0trans", "py0trans", "px0refl", "py0refl", "px1trans", "py1trans", "px1refl", "py1refl", "etot");
+        ioer::tabout('#', "t", "n0trans", "n0refl", "n1trans", "n1refl", "px0trans", "py0trans", "px0refl", "py0refl", "px1trans", "py1trans", "px1refl", "py1refl", "etot", "c0sq", "c1sq");
         for (int irec = 0; irec < Nrec; ++irec) {
             n0trans = n0trans_arr[irec];
             n0refl = n0refl_arr[irec];
@@ -421,10 +446,13 @@ void fssh() {
             n1trans /= Ntraj;
             n1refl /= Ntraj;
 
-            ioer::tabout('#', irec * output_step * dt, n0trans, n0refl, n1trans, n1refl, px0trans, py0trans, px0refl, py0refl, px1trans, py1trans, px1refl, py1refl, (KE + PE) / Ntraj);
+            c0sq = c0sq_arr[irec] / Ntraj;
+            c1sq = c1sq_arr[irec] / Ntraj;
+
+            ioer::tabout('#', irec * output_step * dt, n0trans, n0refl, n1trans, n1refl, px0trans, py0trans, px0refl, py0refl, px1trans, py1trans, px1refl, py1refl, (KE + PE) / Ntraj, c0sq, c1sq);
         }
         // final results
-        ioer::tabout(init_px, n0trans, n0refl, n1trans, n1refl, px0trans, py0trans, px0refl, py0refl, px1trans, py1trans, px1refl, py1refl);
+        ioer::tabout(init_px, n0trans, n0refl, n1trans, n1refl, px0trans, py0trans, px0refl, py0refl, px1trans, py1trans, px1refl, py1refl, c0sq, c1sq);
         // hop info
         ioer::info("# hopup = ", hopup, " hopdn = ", hopdn, " hopfr = ", hopfr, " hopfr_rate = ", hopfr / (hopup + hopdn + hopfr));
         ioer::info("# hop count: ", hop_count_summary);

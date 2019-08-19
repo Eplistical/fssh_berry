@@ -63,8 +63,8 @@ namespace {
         const complex<double> eip = exp(matrixop::IMAGIZ * cal_phi(r));
 
         vector< complex<double> > H(4);
-        H[0+0*2] = 0.5 * (param_A * pow(x, 2) + pow(y - B, 2) + param_D);
-        H[1+1*2] = 0.5 * (pow(x - B, 2) + param_A * pow(y, 2) - param_D);
+        H[0+0*2] = 0.5 * (param_A * pow(x, 2) + pow(y - param_B, 2) + param_D);
+        H[1+1*2] = 0.5 * (pow(x - param_B, 2) + param_A * pow(y, 2) - param_D);
         H[0+1*2] = param_C * eip;
         H[1+0*2] = conj(H[0+1*2]);
         return H;

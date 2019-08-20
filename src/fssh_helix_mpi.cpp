@@ -207,13 +207,13 @@ void fssh() {
         init_state(state[itraj]);
     }
     // statistics
-    double n0 = 0.0, n1 = 0.0;
+    double n0d = 0.0, n1d = 0.0;
     double KE = 0.0, PE = 0.0;
     double hopup = 0.0, hopdn = 0.0, hopfr = 0.0, hoprj = 0.0;
     vector<double> hop_count(my_Ntraj, 0.0);
     // recorders
     int Nrec = Nstep / output_step;
-    vector<double> n0_arr(Nrec), n1_arr(Nrec);
+    vector<double> n0d_arr(Nrec), n1d_arr(Nrec);
     vector<double> KE_arr(Nrec), PE_arr(Nrec);
     vector<double> hop_count_summary(50, 0.0);
     // main loop
@@ -254,14 +254,25 @@ void fssh() {
             // data analysis
             int irec = istep / output_step;
             // population
-            n0 = n1 = 0.0;
+            n0d = n1d = 0.0;
             for_each(state.begin(), state.end(), 
-                    [&n0, &n1] (const state_t& st) { 
+                    [&n0d, &n1d] (const state_t& st) { 
+                        vector<double> r { st[0].real(), st[1].real() };
+                        vector<double> v { st[2].real(), st[3].real() };
+                        vector< complex<double> > c { st[4], st[5] };
                         int s = static_cast<int>(st[6].real());
-                        // TODO
+
+                        // calc eva & evt
+                        vector<double> eva;
+                        vector< complex<double> > U;
+                        matrixop::hdiag(cal_H(r), eva, U);
+
+                        // population
+                        n0d += pow(abs(U[0+s*2]), 2) + 2 * (U[0+0*2] * c[0] * conj(c[1]) * conj(U[0+1*2])).real();
+                        n1d += pow(abs(U[1+s*2]), 2) + 2 * (U[1+0*2] * c[0] * conj(c[1]) * conj(U[1+1*2])).real();
                     });
-            n0_arr[irec] = n0;
-            n1_arr[irec] = n1;
+            n0d_arr[irec] = n0d;
+            n1d_arr[irec] = n1d;
             // energy
             KE = PE = 0.0;
             for_each(state.begin(), state.end(), 
@@ -279,8 +290,8 @@ void fssh() {
             bool end_flag = all_of(state.begin(), state.end(), check_end);
             if (end_flag == true) {
                 // fill the rest
-                fill(n0_arr.begin() + irec + 1, n0_arr.end(), n0);
-                fill(n1_arr.begin() + irec + 1, n1_arr.end(), n1);
+                fill(n0d_arr.begin() + irec + 1, n0d_arr.end(), n0d);
+                fill(n1d_arr.begin() + irec + 1, n1d_arr.end(), n1d);
 
                 fill(KE_arr.begin() + irec + 1, KE_arr.end(), KE);
                 fill(PE_arr.begin() + irec + 1, PE_arr.end(), PE);
@@ -297,7 +308,7 @@ void fssh() {
     for (int r = 1; r < MPIer::size; ++r) {
         if (MPIer::rank == r) {
             MPIer::send(0, 
-                    n0_arr, n1_arr,
+                    n0d_arr, n1d_arr,
                     KE_arr, PE_arr,
                     hopup, hopdn, hopfr, hoprj, hop_count_summary
                     );
@@ -305,8 +316,8 @@ void fssh() {
         else if (MPIer::master) {
             vector<double> buf;
 
-            MPIer::recv(r, buf); n0_arr += buf;
-            MPIer::recv(r, buf); n1_arr += buf;
+            MPIer::recv(r, buf); n0d_arr += buf;
+            MPIer::recv(r, buf); n1d_arr += buf;
 
             MPIer::recv(r, buf); KE_arr += buf;
             MPIer::recv(r, buf); PE_arr += buf;
@@ -340,18 +351,18 @@ void fssh() {
                 " rescaling_alg = ", rescaling_alg,
                 ""
                 );
-        ioer::tabout('#', "t", "n0", "n1", "KE", "PE", "Etot");
+        ioer::tabout('#', "t", "n0d", "n1d", "KE", "PE", "Etot");
         for (int irec = 0; irec < Nrec; ++irec) {
-            n0 = n0_arr[irec] / Ntraj;
-            n1 = n1_arr[irec] / Ntraj;
+            n0d = n0d_arr[irec] / Ntraj;
+            n1d = n1d_arr[irec] / Ntraj;
 
             KE = KE_arr[irec] / Ntraj;
             PE = PE_arr[irec] / Ntraj;
 
-            ioer::tabout('#', irec * output_step * dt, n0, n1, KE, PE, (PE + KE));
+            ioer::tabout('#', irec * output_step * dt, n0d, n1d, KE, PE, (PE + KE));
         }
         // final results
-        ioer::tabout(init_px, n0, n1, KE, PE, (PE + KE));
+        ioer::tabout(init_px, n0d, n1d, KE, PE, (PE + KE));
         // hop info
         ioer::info("# hopup = ", hopup, " hopdn = ", hopdn, " hopfr = ", hopfr, " hopfr_rate = ", hopfr / (hopup + hopdn + hopfr));
         ioer::info("# hop count: ", hop_count_summary);

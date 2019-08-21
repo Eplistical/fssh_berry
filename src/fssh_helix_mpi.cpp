@@ -241,8 +241,8 @@ void fssh() {
                 }
                 // initialize random force
                 if (enable_bath) {
-                    Fx_random = randomer::normal(0.0, sqrt(2.0 * fric_gamma_x * kT / dt));
-                    Fy_random = randomer::normal(0.0, sqrt(2.0 * fric_gamma_y * kT / dt));
+                    Fx_random = randomer::normal(0.0, sqrt(2.0 * fric_gamma_x * mass * kT / dt));
+                    Fy_random = randomer::normal(0.0, sqrt(2.0 * fric_gamma_y * mass * kT / dt));
                 }
                 // propagate
                 rk4.do_step(sys, state[itraj], istep * dt, dt);
@@ -359,10 +359,8 @@ void fssh() {
             KE = KE_arr[irec] / Ntraj;
             PE = PE_arr[irec] / Ntraj;
 
-            ioer::tabout('#', irec * output_step * dt, n0d, n1d, KE, PE, (PE + KE));
+            ioer::tabout(' ', irec * output_step * dt, n0d, n1d, KE, PE, (PE + KE));
         }
-        // final results
-        ioer::tabout(init_px, n0d, n1d, KE, PE, (PE + KE));
         // hop info
         ioer::info("# hopup = ", hopup, " hopdn = ", hopdn, " hopfr = ", hopfr, " hopfr_rate = ", hopfr / (hopup + hopdn + hopfr));
         ioer::info("# hop count: ", hop_count_summary);

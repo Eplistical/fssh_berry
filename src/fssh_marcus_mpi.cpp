@@ -241,8 +241,8 @@ void fssh() {
                 }
                 // initialize random force
                 if (enable_bath) {
-                    Fx_random = randomer::normal(0.0, sqrt(2.0 * fric_gamma_x * kT / dt));
-                    Fy_random = randomer::normal(0.0, sqrt(2.0 * fric_gamma_y * kT / dt));
+                    Fx_random = randomer::normal(0.0, sqrt(2.0 * fric_gamma_x * mass * kT / dt));
+                    Fy_random = randomer::normal(0.0, sqrt(2.0 * fric_gamma_y * mass * kT / dt));
                 }
                 // propagate
                 rk4.do_step(sys, state[itraj], istep * dt, dt);

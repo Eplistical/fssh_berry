@@ -33,23 +33,25 @@ const complex<double> zI(0.0, 1.0);
 
 vector<double> potential_params;
 
+const double kT = 9.5e-4;
 const double mass = 2000.0;
-double kT = 9.5e-4;
-double init_x = -5.0;
-double sigma_x = 0.5; 
-double init_px = 20.0;
-double sigma_px = 1.0; 
+
+double init_x = 0.0;
+double sigma_x = 0.0; 
+double init_px = 0.0;
+double sigma_px = sqrt(mass * kT); 
 double fric_gamma_x = 0.0;
-double init_y = 0.0;
-double sigma_y = 0.5; 
+double init_y = 5.0;
+double sigma_y = 0.0; 
 double init_py = 0.0;
-double sigma_py = 1.0; 
+double sigma_py = sqrt(mass * kT); 
 double fric_gamma_y = 0.0;
+
 double init_s = 0.0;
-int Nstep = 10000;
+int Nstep = 200000;
 double dt = 0.1;
 int output_step = 100;
-int Ntraj = 1000;
+int Ntraj = 10000;
 int seed = 0;
 bool enable_hop = true;
 bool enable_bath = true;
@@ -87,7 +89,6 @@ inline bool argparse(int argc, char** argv)
         ("output_step", po::value<int>(&output_step), "# step for output")
         ("dt", po::value<double>(&dt), "single time step")
         ("rescaling_alg", po::value<string>(&rescaling_alg), "rescaling algorithm")
-        ("kT", po::value<double>(&kT), "bath temperature")
         ("seed", po::value<int>(&seed), "random seed")
         ("enable_hop", po::value<bool>(&enable_hop), "enable hopping")
         ("enable_bath", po::value<bool>(&enable_bath), "enable bath")
@@ -115,11 +116,8 @@ void init_state(state_t& state) {
     state[1].real(randomer::normal(init_y, sigma_y)); 
 
     state[2].real(randomer::normal(init_px, sigma_px) / mass); 
-    while (state[2].real() <= 0.0) {
-        state[2].real(randomer::normal(init_px, sigma_px) / mass); 
-    }
-
     state[3].real(randomer::normal(init_py, sigma_py) / mass); 
+
     state[4].real(sqrt(1.0 - init_s));
     state[5].real(sqrt(init_s));
     state[6].real((randomer::rand() < init_s) ? 1.0 : 0.0);

@@ -39,12 +39,12 @@ const double kT = 9.5e-4;
 double init_x = -M / mass / omega / omega;
 double sigma_x = 0.0; 
 double init_px = 0.0;
-double sigma_px = sqrt(kT / mass); 
+double sigma_px = sqrt(mass * kT); 
 double fric_gamma_x = 0.0;
 double init_y = 0.0;
 double sigma_y = 0.0; 
 double init_py = 0.0;
-double sigma_py = sqrt(kT / mass); 
+double sigma_py = sqrt(mass * kT); 
 double fric_gamma_y = 0.0;
 double init_s = 0.0;
 int Nstep = 200000;
@@ -115,11 +115,8 @@ void init_state(state_t& state) {
     state[1].real(randomer::normal(init_y, sigma_y)); 
 
     state[2].real(randomer::normal(init_px, sigma_px) / mass); 
-    while (state[2].real() <= 0.0) {
-        state[2].real(randomer::normal(init_px, sigma_px) / mass); 
-    }
-
     state[3].real(randomer::normal(init_py, sigma_py) / mass); 
+
     state[4].real(sqrt(1.0 - init_s));
     state[5].real(sqrt(init_s));
     state[6].real((randomer::rand() < init_s) ? 1.0 : 0.0);

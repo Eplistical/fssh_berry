@@ -15,6 +15,7 @@
 namespace {
     using std::vector;
     using std::pow;
+    using std::exp;
     using std::complex;
 
     const double omega = 4.375e-5;
@@ -23,7 +24,7 @@ namespace {
 
     double param_A = omega * omega;
     double param_B = M;
-    double param_C = 2.5e-5;
+    double param_C = std::exp(-8.5);
     double param_D = 0.018;
 
     /*

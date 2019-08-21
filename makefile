@@ -15,6 +15,7 @@ fssh : \
 	fssh_tully12_mpi \
 	fssh_flat_anal_mpi \
 	fssh_flat2_anal_mpi \
+	fssh_marcus_mpi \
 	fssh_helix_mpi
 
 exact_flat: $(SRC)/exact_flat.cpp 
@@ -66,6 +67,9 @@ fssh_flat2_anal_mpi: $(SRC)/fssh_flat2_anal_mpi.cpp
 	$(MPICXX) $(OPT) $< -o $@ $(LIBS)
 
 fssh_helix_mpi: $(SRC)/fssh_helix_mpi.cpp 
+	$(MPICXX) $(OPT) $< -o $@ $(LIBS)
+
+fssh_marcus_mpi: $(SRC)/fssh_marcus_mpi.cpp 
 	$(MPICXX) $(OPT) $< -o $@ $(LIBS)
 
 check : $(SRC)/check_potential.cpp

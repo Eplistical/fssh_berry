@@ -13,13 +13,14 @@
 
 //#include "2d_flat_potential_phixplusy.hpp"
 //#include "2d_tully1_potential.hpp"
-#include "2d_helix_potential.hpp"
+//#include "2d_helix_potential.hpp"
+#include "2d_marcus_potential.hpp"
 
 int main(int argc, char** argv) {
     output_potential_param();
 
     const int N = 400;
-    const double xmin = -10.0, xmax = 10.0;
+    const double xmin = -5000.0, xmax = 5000.0;
     vector<double> xarr = linspace(xmin, xmax, N);
     vector<double> yarr = linspace(xmin, xmax, N);
 

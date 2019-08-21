@@ -359,10 +359,8 @@ void fssh() {
             KE = KE_arr[irec] / Ntraj;
             PE = PE_arr[irec] / Ntraj;
 
-            ioer::tabout('#', irec * output_step * dt, n0d, n1d, KE, PE, (PE + KE));
+            ioer::tabout(' ', irec * output_step * dt, n0d, n1d, KE, PE, (PE + KE));
         }
-        // final results
-        ioer::tabout(init_px, n0d, n1d, KE, PE, (PE + KE));
         // hop info
         ioer::info("# hopup = ", hopup, " hopdn = ", hopdn, " hopfr = ", hopfr, " hopfr_rate = ", hopfr / (hopup + hopdn + hopfr));
         ioer::info("# hop count: ", hop_count_summary);

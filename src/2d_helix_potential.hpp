@@ -21,39 +21,48 @@ namespace {
     double param_B = 5.0;
     double param_C = 1.0;
     double param_D = 0.0;
-    double param_W = 1.0;
+    double param_Wx = 1.0;
+    double param_Wy = 1.0;
+
+    /*
+     * H00 = 0.5 * A * x**2 + 0.5 * (y - B)**2 + 0.5 * D
+     * H11 = 0.5 * (x - B)**2 + 0.5 * A * y**2 - 0.5 * D
+     * H01 = C * exp(i * (Wx * x + Wy * y))
+     */
 
     void output_potential_param() {
-        ioer::info("# 2D Helix potential [with phi = W * x + y] parameters: ", 
+        ioer::info("# 2D Helix potential [with phi = Wx * x + Wy * y] parameters: ", 
                     " A = ", param_A,
                     " B = ", param_B,
                     " C = ", param_C,
                     " D = ", param_D,
-                    " W = ", param_W);
+                    " Wx = ", param_Wx,
+                    " Wy = ", param_Wy);
     }
 
     void set_potenial_params(const std::vector<double>& params) {
-        misc::crasher::confirm(params.size() >= 5, 
-                "set_potenial_params: potential paramter vector size must be >= 5");
+        misc::crasher::confirm(params.size() >= 6, 
+                "set_potenial_params: potential paramter vector size must be >= 6");
         param_A = params[0];
         param_B = params[1];
         param_C = params[2];
         param_D = params[3];
-        param_W = params[4];
+        param_Wx = params[4];
+        param_Wy = params[5];
     }
 
     double cal_phi(const vector<double>& r) {
         const double x = r[0];
         const double y = r[1];
-        return param_W * x + y;
+        return param_Wx * x + param_Wy * y;
     }
 
     vector<double> cal_der_phi(const vector<double>& r) {
         const double x = r[0];
         const double y = r[1];
         vector<double> der_phi(r.size(), 0.0);
-        der_phi[0] = param_W;
-        der_phi[1] = 1.0;
+        der_phi[0] = param_Wx;
+        der_phi[1] = param_Wy;
         return der_phi;
     }
 

@@ -15,7 +15,7 @@
 #include "boost/program_options.hpp"
 
 #include "2d_fssh_rescaling.hpp"
-#include "2d_helix_potential.hpp"
+#include "2d_helix_ir2_potential.hpp"
 
 enum {
     HOP_UP,

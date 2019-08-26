@@ -16,7 +16,9 @@ fssh : \
 	fssh_flat_anal_mpi \
 	fssh_flat2_anal_mpi \
 	fssh_marcus_mpi \
-	fssh_helix_mpi
+	fssh_helix_mpi \
+	fssh_helix_ir_mpi \
+	fssh_helix_ir2_mpi
 
 exact_flat: $(SRC)/exact_flat.cpp 
 	$(CXX) $(OPT) $< -o $@ $(LIBS)
@@ -67,6 +69,12 @@ fssh_flat2_anal_mpi: $(SRC)/fssh_flat2_anal_mpi.cpp
 	$(MPICXX) $(OPT) $< -o $@ $(LIBS)
 
 fssh_helix_mpi: $(SRC)/fssh_helix_mpi.cpp 
+	$(MPICXX) $(OPT) $< -o $@ $(LIBS)
+
+fssh_helix_ir_mpi: $(SRC)/fssh_helix_ir_mpi.cpp 
+	$(MPICXX) $(OPT) $< -o $@ $(LIBS)
+
+fssh_helix_ir2_mpi: $(SRC)/fssh_helix_ir2_mpi.cpp 
 	$(MPICXX) $(OPT) $< -o $@ $(LIBS)
 
 fssh_marcus_mpi: $(SRC)/fssh_marcus_mpi.cpp 

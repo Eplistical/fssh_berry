@@ -18,11 +18,11 @@ namespace {
     using std::complex;
 
     double param_A = 0.1;
-    double param_B = 5.0;
-    double param_C = 1.0;
+    double param_B = 0.2;
+    double param_C = 0.001;
     double param_D = 0.0;
-    double param_Wx = 1.0;
-    double param_Wy = 1.0;
+    double param_Wx = 0.0;
+    double param_Wy = 0.0;
 
     /*
      * H00 = 0.5 * A * x**2 + 0.5 * (y - B)**2 + 0.5 * D

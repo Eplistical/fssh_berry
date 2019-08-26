@@ -13,8 +13,8 @@
 
 //#include "2d_flat_potential_phixplusy.hpp"
 //#include "2d_tully1_potential.hpp"
-//#include "2d_helix_potential.hpp"
-#include "2d_marcus_potential.hpp"
+#include "2d_helix_potential.hpp"
+//#include "2d_marcus_potential.hpp"
 
 int main(int argc, char** argv) {
     output_potential_param();

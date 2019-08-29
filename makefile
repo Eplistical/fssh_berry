@@ -6,7 +6,8 @@ SRC = src
 
 all : exact ehrenfest fssh 
 
-exact : exact_flat exact_flat2 exact_tully1 exact_tully12 exact_tully3 
+exact : exact_flat exact_flat2 exact_tully1 exact_tully12 exact_tully3 \
+	exact_conner
 ehrenfest : ehrenfest_flat_mpi ehrenfest_flat2_mpi ehrenfest_tully1_mpi  ehrenfest_tully12_mpi ehrenfest_tully3_mpi
 fssh : \
 	fssh_flat_mpi \
@@ -33,6 +34,9 @@ exact_tully12: $(SRC)/exact_tully12.cpp
 	$(CXX) $(OPT) $< -o $@ $(LIBS)
 
 exact_tully3: $(SRC)/exact_tully3.cpp 
+	$(CXX) $(OPT) $< -o $@ $(LIBS)
+
+exact_conner: $(SRC)/exact_conner.cpp 
 	$(CXX) $(OPT) $< -o $@ $(LIBS)
 
 ehrenfest_flat_mpi: $(SRC)/ehrenfest_flat_mpi.cpp 

@@ -59,8 +59,8 @@ namespace {
         const double y = r[1];
         const double R = pow(x * x + y * y, 0.5);
         vector<double> der_phi(r.size(), 0.0);
-        der_phi[0] = x / R;
-        der_phi[1] = y / R;
+        der_phi[0] = param_W * x / R;
+        der_phi[1] = param_W * y / R;
         return der_phi;
     }
 

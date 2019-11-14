@@ -26,6 +26,8 @@ namespace {
             const vector< complex<double> >& dcx,
             const vector< complex<double> >& dcy,
             const vector< complex<double> >& dx_dcx,
+            const vector< complex<double> >& dy_dcx,
+            const vector< complex<double> >& dx_dcy,
             const vector< complex<double> >& dy_dcy,
             const vector< complex<double> >& Fx,
             const vector< complex<double> >& Fy,
@@ -100,6 +102,15 @@ namespace {
              */
             n[0] = (conj(dx_dcx[to+from*2] + dy_dcy[to+from*2]) * dcx[from+to*2]).imag();
             n[1] = (conj(dx_dcx[to+from*2] + dy_dcy[to+from*2]) * dcy[from+to*2]).imag();
+        }
+        else if (rescaling_alg == "a5") {
+            /*
+             *  1->2:
+             *  n^alpha ~ Re[(\sum_beta d12^beta * d(d21^alpha) / (dr^beta)))
+             *
+             */
+            n[0] = (dx_dcx[to+from*2] * dcx[from+to*2] + dy_dcx[to+from*2] * dcy[from+to*2]).real();
+            n[1] = (dx_dcy[to+from*2] * dcx[from+to*2] + dy_dcy[to+from*2] * dcy[from+to*2]).real();
         }
         else {
             misc::crasher::confirm(false, "hopper: Invalid rescaling_alg");

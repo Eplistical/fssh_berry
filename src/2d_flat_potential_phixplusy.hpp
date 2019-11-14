@@ -167,7 +167,8 @@ namespace {
     void cal_info_anal(const vector<double>& r, 
             vector< complex<double> >& Fx, vector< complex<double> >& Fy, 
             vector< complex<double> >& dcx, vector< complex<double> >& dcy, 
-            vector< complex<double> >& dx_dcx, vector< complex<double> >& dy_dcy, 
+            vector< complex<double> >& dx_dcx, vector< complex<double> >& dy_dcx, 
+            vector< complex<double> >& dx_dcy, vector< complex<double> >& dy_dcy, 
             vector<double>& eva, vector< complex<double> >& lastevt
             )
     {
@@ -207,7 +208,7 @@ namespace {
         Fy[0+1*2] = dcy[0+1*2] * (eva[0] - eva[1]);
         Fy[1+0*2] = dcy[1+0*2] * (eva[1] - eva[0]);
 
-        // dx_dcx, dy_dcy
+        // dx_dcx
         dx_dcx.assign(4, 0.0);
         dx_dcx[0+0*2] = matrixop::IMAGIZ * CC * (CC * derder_phi[0+0*2] - SS * der_phi[0] * der_theta[0]);
         dx_dcx[1+1*2] = matrixop::IMAGIZ * SS * (SS * derder_phi[0+0*2] + CC * der_phi[0] * der_theta[0]);
@@ -217,15 +218,38 @@ namespace {
                     );
         dx_dcx[1+0*2] = -conj(dx_dcx[0+1*2]);
 
+        // dy_dcx
+        dy_dcx.assign(4, 0.0);
+        dy_dcx[0+0*2] = matrixop::IMAGIZ * CC * (CC * derder_phi[0+1*2] - SS * der_phi[0] * der_theta[1]);
+        dy_dcx[1+1*2] = matrixop::IMAGIZ * SS * (SS * derder_phi[0+1*2] + CC * der_phi[0] * der_theta[1]);
+        dy_dcx[0+1*2] = 0.5 * (derder_theta[0+1*2] 
+                    + matrixop::IMAGIZ * sin(theta) * derder_phi[0+1*2]
+                    + matrixop::IMAGIZ * cos(theta) * der_phi[0] * der_theta[1]
+                    );
+        dy_dcx[1+0*2] = -conj(dy_dcx[0+1*2]);
+
+        // dx_dcy
+        dx_dcy.assign(4, 0.0);
+        dx_dcy[0+0*2] = matrixop::IMAGIZ * CC * (CC * derder_phi[1+0*2] - SS * der_phi[1] * der_theta[0]);
+        dx_dcy[1+1*2] = matrixop::IMAGIZ * SS * (SS * derder_phi[1+0*2] + CC * der_phi[1] * der_theta[0]);
+        dx_dcy[0+1*2] = 0.5 * (derder_theta[1+0*2] 
+                    + matrixop::IMAGIZ * sin(theta) * derder_phi[1+0*2]
+                    + matrixop::IMAGIZ * cos(theta) * der_phi[1] * der_theta[0]
+                    );
+        dx_dcy[1+0*2] = -conj(dx_dcy[0+1*2]);
+
+
+        // dy_dcy
         dy_dcy.assign(4, 0.0);
         dy_dcy[0+0*2] = matrixop::IMAGIZ * CC * (CC * derder_phi[1+1*2] - SS * der_phi[1] * der_theta[1]);
         dy_dcy[1+1*2] = matrixop::IMAGIZ * SS * (SS * derder_phi[1+1*2] + CC * der_phi[1] * der_theta[1]);
         dy_dcy[0+1*2] = 0.5 * (derder_theta[1+1*2] 
                     + matrixop::IMAGIZ * sin(theta) * derder_phi[1+1*2]
-                    + matrixop::IMAGIZ * cos(theta) * der_theta[1] * der_phi[1]
+                    + matrixop::IMAGIZ * cos(theta) * der_phi[1] * der_theta[1]
                     );
         dy_dcy[1+0*2] = -conj(dy_dcy[0+1*2]);
     }
 };
 
 #endif
+

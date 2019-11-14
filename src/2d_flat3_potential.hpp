@@ -1,5 +1,5 @@
-#ifndef _2D_FLAT_POTENTIAL_HPP
-#define _2D_FLAT_POTENTIAL_HPP
+#ifndef _2D_FLAT3_POTENTIAL_HPP
+#define _2D_FLAT3_POTENTIAL_HPP
 
 #include <cstdlib>
 #include <cmath>
@@ -18,30 +18,39 @@ namespace {
     using std::complex;
 
     double param_A = 0.10;
-    double param_B = 3.0;
-    double param_W = 0.0;
+    double param_Bx = 3.0;
+    double param_By = 1.0;
+    double param_Wx = 0.0;
+    double param_Wy = 0.0;
 
     void output_potential_param() {
-        ioer::info("# 2D flat potential [with phi = W * y] parameters: ", 
+        ioer::info("# 2D flat3 potential [with phi = Wx * x + Wy * y, theta = pi/2 * (erf(Bx*x) + 1) * (erf(By*y) + 1)] parameters: ", 
                     " A = ", param_A,
-                    " B = ", param_B,
-                    " W = ", param_W);
+                    " Bx = ", param_Bx,
+                    " By = ", param_By,
+                    " Wx = ", param_Wx,
+                    " Wy = ", param_Wy
+                    );
     }
 
     void set_potenial_params(const std::vector<double>& params) {
-        misc::crasher::confirm(params.size() >= 3, 
-                "set_potenial_params: potential paramter vector size must be >= 3");
+        misc::crasher::confirm(params.size() >= 5, 
+                "set_potenial_params: potential paramter vector size must be >= 5");
         param_A = params[0];
-        param_B = params[1];
-        param_W = params[2];
+        param_Bx = params[1];
+        param_By = params[2];
+        param_Wx = params[3];
+        param_Wy = params[4];
     }
 
     double cal_theta(const vector<double>& r) {
         const double x = r[0];
-        return 0.5 * M_PI * (erf(param_B * x) + 1);
+        const double y = r[1];
+        return 0.5 * M_PI * (erf(param_Bx * x) + 1) * (erf(param_By * y) + 1);
     }
 
     vector<double> cal_der_theta(const vector<double>& r) {
+        // TODO
         const double x = r[0];
         vector<double> der_theta(r.size(), 0.0);
         der_theta[0] = sqrt(M_PI) * param_B * exp(-param_B * param_B * x * x);
@@ -49,6 +58,7 @@ namespace {
     }
 
     vector<double> cal_derder_theta(const vector<double>& r) {
+        // TODO
         const double x = r[0];
         const double y = r[1];
         vector<double> derder_theta(2 * 2, 0.0);
@@ -60,13 +70,15 @@ namespace {
     }
 
     double cal_phi(const vector<double>& r) {
+        const double x = r[0];
         const double y = r[1];
-        return param_W * y;
+        return param_Wx * x + param_Wy * y;
     }
 
     vector<double> cal_der_phi(const vector<double>& r) {
         vector<double> der_phi(r.size(), 0.0);
-        der_phi[1] = param_W;
+        der_phi[0] = param_Wx;
+        der_phi[1] = param_Wy;
         return der_phi;
     }
 
@@ -202,7 +214,7 @@ namespace {
         Fy[0+1*2] = dcy[0+1*2] * (eva[0] - eva[1]);
         Fy[1+0*2] = dcy[1+0*2] * (eva[1] - eva[0]);
 
-        // dx_dcx, dy_dcy
+        // dx_dcx
         dx_dcx.assign(4, 0.0);
         dx_dcx[0+0*2] = matrixop::IMAGIZ * CC * (CC * derder_phi[0+0*2] - SS * der_phi[0] * der_theta[0]);
         dx_dcx[1+1*2] = matrixop::IMAGIZ * SS * (SS * derder_phi[0+0*2] + CC * der_phi[0] * der_theta[0]);
@@ -212,15 +224,38 @@ namespace {
                     );
         dx_dcx[1+0*2] = -conj(dx_dcx[0+1*2]);
 
+        // dy_dcx
+        dy_dcx.assign(4, 0.0);
+        dy_dcx[0+0*2] = matrixop::IMAGIZ * CC * (CC * derder_phi[0+1*2] - SS * der_phi[0] * der_theta[1]);
+        dy_dcx[1+1*2] = matrixop::IMAGIZ * SS * (SS * derder_phi[0+1*2] + CC * der_phi[0] * der_theta[1]);
+        dy_dcx[0+1*2] = 0.5 * (derder_theta[0+1*2] 
+                    + matrixop::IMAGIZ * sin(theta) * derder_phi[0+1*2]
+                    + matrixop::IMAGIZ * cos(theta) * der_phi[0] * der_theta[1]
+                    );
+        dy_dcx[1+0*2] = -conj(dy_dcx[0+1*2]);
+
+        // dx_dcy
+        dx_dcy.assign(4, 0.0);
+        dx_dcy[0+0*2] = matrixop::IMAGIZ * CC * (CC * derder_phi[1+0*2] - SS * der_phi[1] * der_theta[0]);
+        dx_dcy[1+1*2] = matrixop::IMAGIZ * SS * (SS * derder_phi[1+0*2] + CC * der_phi[1] * der_theta[0]);
+        dx_dcy[0+1*2] = 0.5 * (derder_theta[1+0*2] 
+                    + matrixop::IMAGIZ * sin(theta) * derder_phi[1+0*2]
+                    + matrixop::IMAGIZ * cos(theta) * der_phi[1] * der_theta[0]
+                    );
+        dx_dcy[1+0*2] = -conj(dx_dcy[0+1*2]);
+
+
+        // dy_dcy
         dy_dcy.assign(4, 0.0);
         dy_dcy[0+0*2] = matrixop::IMAGIZ * CC * (CC * derder_phi[1+1*2] - SS * der_phi[1] * der_theta[1]);
         dy_dcy[1+1*2] = matrixop::IMAGIZ * SS * (SS * derder_phi[1+1*2] + CC * der_phi[1] * der_theta[1]);
         dy_dcy[0+1*2] = 0.5 * (derder_theta[1+1*2] 
                     + matrixop::IMAGIZ * sin(theta) * derder_phi[1+1*2]
-                    + matrixop::IMAGIZ * cos(theta) * der_theta[1] * der_phi[1]
+                    + matrixop::IMAGIZ * cos(theta) * der_phi[1] * der_theta[1]
                     );
         dy_dcy[1+0*2] = -conj(dy_dcy[0+1*2]);
     }
 };
 
 #endif
+

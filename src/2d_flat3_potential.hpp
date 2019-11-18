@@ -17,9 +17,9 @@ namespace {
     using std::vector;
     using std::complex;
 
-    double param_A = 0.10;
+    double param_A = 0.02;
     double param_Bx = 3.0;
-    double param_By = 1.0;
+    double param_By = 3.0;
     double param_Wx = 0.0;
     double param_Wy = 0.0;
 
@@ -46,26 +46,26 @@ namespace {
     double cal_theta(const vector<double>& r) {
         const double x = r[0];
         const double y = r[1];
-        return 0.5 * M_PI * (erf(param_Bx * x) + 1) * (erf(param_By * y) + 1);
+        return 0.25 * M_PI * (erf(param_Bx * x) + 1) * (erf(param_By * y) + 1);
     }
 
     vector<double> cal_der_theta(const vector<double>& r) {
-        // TODO
         const double x = r[0];
+        const double y = r[1];
         vector<double> der_theta(r.size(), 0.0);
-        der_theta[0] = sqrt(M_PI) * param_B * exp(-param_B * param_B * x * x);
+        der_theta[0] = sqrt(M_PI) * 0.5 * param_Bx * exp(-param_Bx * param_Bx * x * x) * (erf(param_By * y) + 1);
+        der_theta[1] = sqrt(M_PI) * 0.5 * param_By * exp(-param_By * param_By * y * y) * (erf(param_Bx * x) + 1);
         return der_theta;
     }
 
     vector<double> cal_derder_theta(const vector<double>& r) {
-        // TODO
         const double x = r[0];
         const double y = r[1];
         vector<double> derder_theta(2 * 2, 0.0);
-        derder_theta[0+0*2] = -2.0 * sqrt(M_PI) * pow(param_B, 3) * x * exp(-param_B * param_B * x * x); // d2theta / dxdx
-        derder_theta[0+1*2] = 0.0; // d2theta / dxdy
-        derder_theta[1+0*2] = 0.0; // d2theta / dydx 
-        derder_theta[1+1*2] = 0.0; // d2theta / dydy
+        derder_theta[0+0*2] = -sqrt(M_PI) * pow(param_Bx, 3) * x * exp(-param_Bx * param_Bx * x * x) * (erf(param_By * y) + 1); // d2theta / dxdx
+        derder_theta[1+1*2] = -sqrt(M_PI) * pow(param_By, 3) * y * exp(-param_By * param_By * y * y) * (erf(param_Bx * x) + 1); // d2theta / dydy
+        derder_theta[0+1*2] = param_Bx * exp(-param_Bx * param_Bx * x * x) * param_By * exp(-param_By * param_By * y * y); // d2theta / dxdy
+        derder_theta[1+0*2] = derder_theta[0+1*2]; // d2theta / dydx 
         return derder_theta;
     }
 

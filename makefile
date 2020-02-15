@@ -55,6 +55,9 @@ exact_tully22: $(SRC)/exact_tully22.cpp
 exact_tully3: $(SRC)/exact_tully3.cpp 
 	$(CXX) $(OPT) $< -o $@ $(LIBS)
 
+exact_conner: $(SRC)/exact_conner.cpp 
+	$(CXX) $(OPT) $< -o $@ $(LIBS)
+
 ehrenfest_flat_mpi: $(SRC)/ehrenfest_flat_mpi.cpp 
 	$(MPICXX) $(OPT) $< -o $@ $(LIBS)
 

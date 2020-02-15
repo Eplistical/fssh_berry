@@ -21,8 +21,8 @@ namespace {
     double param_r = 1.0;
     double param_R = 2.0;
     double param_eps = 5.0;
-    double param_forbidden = 1000.0;
-    double param_alpha = 1000.0;
+    double param_forbidden = 10.0;
+    double param_alpha = 200.0;
     double param_W = 0.0;
 
     void output_potential_param() {
@@ -42,8 +42,8 @@ namespace {
         misc::crasher::confirm(params.size() >= 8, 
                 "set_potenial_params: potential paramter vector size must be >= 8");
         param_A = params[0];
-        param_C = params[2];
-        param_r = params[1];
+        param_C = params[1];
+        param_r = params[2];
         param_R = params[3];
         param_eps = params[4];
         param_forbidden = params[5];

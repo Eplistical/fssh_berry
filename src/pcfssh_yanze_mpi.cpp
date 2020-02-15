@@ -1,4 +1,5 @@
 #include <cstdlib>
+#include <exception>
 #include <iterator>
 #include <set>
 #include <cmath>
@@ -52,7 +53,7 @@ string init_pos = "left";
 const set<string> init_pos_set { "left", "bottom" };
 string rescaling_alg = "m1";
 const set<string> rescaling_alg_set { "x", "m1", "m2" };
-string pc_rescaling_alg = "parallel";
+string pc_rescaling_alg = "none";
 const set<string> pc_rescaling_alg_set { "none", "parallel" };
 string pc_frustration_alg = "neil";
 const set<string> pc_frustration_alg_set { "neil" };
@@ -118,21 +119,59 @@ inline bool argparse(int argc, char** argv)
     return true;
 }
 
-void init_state(state_t& state) {
-    state.resize(7, matrixop::ZEROZ);
-    // state = x, y, vx, vy, c0, c1, s
-    if (init_pos == "left") {
-        //TODO: xy dist
-        state[2].real(sqrt(init_E * 2 * mass));
-        state[3].real(0.0);
+double xdist(double x) {
+    if (x < param_r - 0.5*param_R or x > 0.5*param_R) {
+        return 1e-20;
     }
-    else if (init_pos == "bottom") {
-        state[2].real(0.0);
-        state[3].real(sqrt(init_E * 2 * mass));
+    else {
+        const double L = param_R - param_r;
+        return sqrt(2.0 / L) * sin(M_PI / L * (x + 0.5 * param_R - param_r));
     }
-    state[4].real(sqrt(1.0 - init_s));
-    state[5].real(sqrt(init_s));
-    state[6].real((randomer::rand() < init_s) ? 1.0 : 0.0);
+};
+
+void init_state(vector<state_t>& state, int N) {
+    state.resize(N);
+    const vector<double> xs = randomer::MHsample(xdist, 2*N, 10000, 100, 0.5 * param_r, 0.1 * (param_R - param_r));
+    int idx = 0;
+    for (auto& st : state) {
+        // st => x, y, vx, vy, c0, c1, s
+        st.resize(7, matrixop::ZEROZ);
+        if (init_pos == "left") {
+            while (xs[idx] + 0.5*param_R > param_R - 2.0 / param_alpha or xs[idx] + 0.5*param_R < param_r + 2.0 / param_alpha) {
+                // xs[idx] out of boundary
+                if (idx < xs.size()) {
+                    idx += 1;
+                } 
+                else {
+                    throw out_of_range("init_state: insufficient candidates");
+                }
+            }
+            st[0].real(-0.5 * param_R);
+            st[1].real(xs[idx]);
+            st[2].real(sqrt(init_E * 2 / mass));
+            st[3].real(0.0);
+            idx += 1;
+        }
+        else if (init_pos == "bottom") {
+            while (xs[idx] + 0.5*param_R > param_R - 2.0 / param_alpha or xs[idx] + 0.5*param_R < param_r + 2.0 / param_alpha) {
+                // xs[idx] out of boundary
+                if (idx < xs.size()) {
+                    idx += 1;
+                } 
+                else {
+                    throw out_of_range("init_state: insufficient candidates");
+                }
+            }
+            st[0].real(xs[idx]);
+            st[1].real(-0.5 * param_R);
+            st[2].real(0.0);
+            st[3].real(sqrt(init_E * 2 / mass));
+            idx += 1;
+        }
+        st[4].real(sqrt(1.0 - init_s));
+        st[5].real(sqrt(init_s));
+        st[6].real((randomer::rand() < init_s) ? 1.0 : 0.0);
+    }
 }
 
 void sys(const state_t& state, state_t& state_dot, const double /* t */) {
@@ -287,13 +326,11 @@ void fssh() {
     // assign job
     vector<int> my_jobs = MPIer::assign_job(Ntraj);
     int my_Ntraj = my_jobs.size();
-    vector<state_t> state(my_Ntraj);
     // propagation variables
     runge_kutta4<state_t> rk4;
     // initialize
-    for (int itraj(0); itraj < my_Ntraj; ++itraj) {
-        init_state(state[itraj]);
-    }
+    vector<state_t> state;
+    init_state(state, my_Ntraj);
     // statistics
     double n0left = 0.0, n0bot = 0.0, n1left = 0.0, n1bot = 0.0;
     double px0left = 0.0, px0bot = 0.0, px1left = 0.0, px1bot = 0.0;

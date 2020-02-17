@@ -137,7 +137,7 @@ void init_state(vector<state_t>& state, int N) {
         // st => x, y, vx, vy, c0, c1, s
         st.resize(7, matrixop::ZEROZ);
         if (init_pos == "left") {
-            while (xs[idx] + 0.5*param_R > param_R - 2.0 / param_alpha or xs[idx] + 0.5*param_R < param_r + 2.0 / param_alpha) {
+            while (xs[idx] + 0.5*param_R > param_R - 0.0 / param_alpha or xs[idx] + 0.5*param_R < param_r + 0.0 / param_alpha) {
                 // xs[idx] out of boundary
                 if (idx < xs.size()) {
                     idx += 1;
@@ -620,12 +620,14 @@ void fssh() {
 }
 
 void check_surf() {
-    for (double x = -10.0; x < 10.0; x += 0.01) {
-        cal_info_nume(vector<double> {x, 0.0}, Fx, Fy, dcx, dcy, eva, lastevt);
-        ioer::tabout(x, eva, 
-                dcx[0+1*2].real(), dcx[0+1*2].imag(), abs(dcx[0+1*2]), 
-                dcy[0+1*2].real(), dcy[0+1*2].imag(), abs(dcy[0+1*2])
-                );
+    for (double x = -5.0; x < 5.0; x += 0.05) {
+        for (double y = -5.0; y < 5.0; y += 0.05) {
+            cal_info_nume(vector<double> {x, y}, Fx, Fy, dcx, dcy, eva, lastevt);
+            ioer::tabout(x, y, eva, 
+                    dcx[0+1*2].real(), dcx[0+1*2].imag(), abs(dcx[0+1*2]), 
+                    dcy[0+1*2].real(), dcy[0+1*2].imag(), abs(dcy[0+1*2])
+                    );
+        }
     }
 }
 

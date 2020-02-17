@@ -604,7 +604,7 @@ void fssh() {
             ioer::tabout('#', irec * output_step * dt, n0left, n0bot, n1left, n1bot, px0left, py0left, px0bot, py0bot, px1left, py1left, px1bot, py1bot, (KE + PE) / Ntraj);
         }
         // final results
-        ioer::tabout(init_pos, n0left, n0bot, n1left, n1bot, px0left, py0left, px0bot, py0bot, px1left, py1left, px1bot, py1bot);
+        ioer::tabout(init_E, n0left, n0bot, n1left, n1bot, px0left, py0left, px0bot, py0bot, px1left, py1left, px1bot, py1bot);
         // hop info
         ioer::info("# hopup = ", hopup, " hopdn = ", hopdn, " hopfr = ", hopfr, " hopfr_rate = ", hopfr / (hopup + hopdn + hopfr));
         ioer::info("# hop count: ", hop_count_summary);

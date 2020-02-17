@@ -252,6 +252,7 @@ int hopper(state_t& state) {
         const int from = s;
         const int to = 1 - s;
         vector<double> n;
+        /*
         if (rescaling_alg == "b1") {
             vector< complex<double> > Hxx = matrixop::matCmatmat(lastevt, cal_nablanablaHxx(r), lastevt, 2, 2);
             vector< complex<double> > Hyy = matrixop::matCmatmat(lastevt, cal_nablanablaHyy(r), lastevt, 2, 2);
@@ -264,9 +265,10 @@ int hopper(state_t& state) {
             n[1] = (coef * dcy[from+to*2]).real();
         }
         else {
+        */
             n = get_rescaling_direction(rescaling_alg, r, v, c, from, to,
                     dcx, dcy, dx_dcx, dy_dcx, dx_dcy, dy_dcy, Fx, Fy, eva);
-        }
+        //}
         // rescale momentum
         if (norm(n) > 1e-40) {
             vector<double> vn = component(v, n);

@@ -57,7 +57,8 @@ vector< complex<double> > lastevt;
 vector<double> eva(2);
 vector< complex<double> > Fx(4), Fy(4);
 vector< complex<double> > dcx(4), dcy(4);
-vector< complex<double> > dx_dcx(4), dy_dcy(4);
+vector< complex<double> > dx_dcx(4), dy_dcx(4);
+vector< complex<double> > dx_dcy(4), dy_dcy(4);
 
 inline bool argparse(int argc, char** argv) 
 {
@@ -150,8 +151,12 @@ int hopper(state_t& state) {
         // generate rescaling direction
         const int from = s;
         const int to = 1 - s;
+        /*
         vector<double> n = get_rescaling_direction(rescaling_alg, r, v, c, from, to,
                                                         dcx, dcy, dx_dcx, dy_dcy, Fx, Fy, eva);
+                                                        */
+        vector<double> n = get_rescaling_direction(rescaling_alg, r, v, c, from, to,
+                    dcx, dcy, dx_dcx, dy_dcx, dx_dcy, dy_dcy, Fx, Fy, eva);
         // rescale momentum
         if (norm(n) > 1e-40) {
             vector<double> vn = component(v, n);

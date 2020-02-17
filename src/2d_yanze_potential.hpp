@@ -82,12 +82,21 @@ namespace {
         const double m_theta = cal_m_theta(r);
         const complex<double> eip = exp(matrixop::IMAGIZ * cal_phi(r));
         vector< complex<double> > H(4);
+        /*
         H[0+0*2] = param_A * (tanh((m_theta - M_PI/4) * param_eps) + 1.0) 
                     + param_forbidden * (2.0 + tanh((m_r - param_R) * param_alpha) - tanh((m_r - param_r) * param_alpha)); 
         H[1+1*2] = param_A * (tanh(-(m_theta - M_PI/4) * param_eps) + 1.0) 
                     + param_forbidden * (2.0 + tanh((m_r - param_R) * param_alpha) - tanh((m_r - param_r) * param_alpha)); 
         H[0+1*2] = param_C * exp(-param_eps * pow((m_theta - M_PI/4), 2)) * eip
                     * 0.5 * (tanh((m_r - param_r) * param_alpha) - tanh((m_r - param_R) * param_alpha));
+        H[1+0*2] = conj(H[0+1*2]);
+        */
+        H[0+0*2] = param_A * (1.0 + tanh(param_eps * (m_theta - M_PI/4))) 
+                    + param_forbidden * (2.0 + tanh(param_alpha * (m_r - param_R)) - tanh(param_alpha * (m_r - param_r))); 
+        H[1+1*2] = param_A * (1.0 - tanh(param_eps * (m_theta - M_PI/4))) 
+                    + param_forbidden * (2.0 + tanh(param_alpha * (m_r - param_R)) - tanh(param_alpha * (m_r - param_r))); 
+        H[0+1*2] = param_C * exp(-param_eps * pow((m_theta - M_PI/4), 2)) * eip
+                    * 0.5 * (tanh(param_alpha * (m_r - param_r)) - tanh(param_alpha * (m_r - param_R)));
         H[1+0*2] = conj(H[0+1*2]);
         return H;
     }
@@ -104,12 +113,12 @@ namespace {
         auto der_tanh = [](double x) { 
             return (1.0 - pow(tanh(x), 2)); 
         };
-        nablaHx[0+0*2] = param_A * der_tanh((m_theta - M_PI/4) * param_eps) * param_eps * der_m_theta[0]
+        nablaHx[0+0*2] = param_A * der_tanh(param_eps * (m_theta - M_PI/4)) * param_eps * der_m_theta[0]
                             + param_forbidden * ( 
-                                    der_tanh((m_r - param_R) * param_alpha) * param_alpha * der_m_r[0] 
-                                    - der_tanh((m_r - param_r) * param_alpha) * param_alpha * der_m_r[0] 
+                                    der_tanh(param_alpha * (m_r - param_R)) * param_alpha * der_m_r[0] 
+                                    - der_tanh(param_alpha * (m_r - param_r)) * param_alpha * der_m_r[0] 
                                   );
-        nablaHx[1+1*2] = param_A * der_tanh((m_theta - M_PI/4) * -param_eps) * -param_eps * der_m_theta[0]
+        nablaHx[1+1*2] = param_A * -der_tanh(param_eps * (m_theta - M_PI/4)) * param_eps * der_m_theta[0]
                             + param_forbidden * ( 
                                     der_tanh((m_r - param_R) * param_alpha) * param_alpha * der_m_r[0] 
                                     - der_tanh((m_r - param_r) * param_alpha) * param_alpha * der_m_r[0] 
@@ -118,11 +127,11 @@ namespace {
         nablaHx[0+1*2] = eip * (
                 matrixop::IMAGIZ * der_phi[0] 
                     * param_C * exp(-param_eps * pow((m_theta - M_PI/4), 2)) 
-                    * 0.5 * (tanh((m_r - param_r) * param_alpha) - tanh((m_r - param_R) * param_alpha))
+                    * 0.5 * (tanh(param_alpha * (m_r - param_r)) - tanh(param_alpha * (m_r - param_R)))
                 + param_C * exp(-param_eps * pow((m_theta - M_PI/4), 2)) * (-2.0) * param_eps * (m_theta - M_PI/4) * der_m_theta[0]
-                    * 0.5 * (tanh((m_r - param_r) * param_alpha) - tanh((m_r - param_R) * param_alpha))
+                    * 0.5 * (tanh(param_alpha * (m_r - param_r)) - tanh(param_alpha * (m_r - param_R)))
                 + param_C * exp(-param_eps * pow((m_theta - M_PI/4), 2))
-                    * 0.5 * (der_tanh((m_r - param_r) * param_alpha) * param_alpha * der_m_r[0] * - der_tanh((m_r - param_R) * param_alpha) * param_alpha * der_m_r[0])
+                    * 0.5 * (der_tanh(param_alpha * (m_r - param_r)) * param_alpha * der_m_r[0] - der_tanh(param_alpha * (m_r - param_R)) * param_alpha * der_m_r[0])
                 );
         nablaHx[1+0*2] = conj(nablaHx[0+1*2]);
         return nablaHx;
@@ -141,12 +150,12 @@ namespace {
         auto der_tanh = [](double x) { 
             return (1.0 - pow(tanh(x), 2)); 
         };
-        nablaHy[0+0*2] = param_A * der_tanh((m_theta - M_PI/4) * param_eps) * param_eps * der_m_theta[1]
+        nablaHy[0+0*2] = param_A * der_tanh(param_eps * (m_theta - M_PI/4)) * param_eps * der_m_theta[1]
                             + param_forbidden * ( 
-                                    der_tanh((m_r - param_R) * param_alpha) * param_alpha * der_m_r[1] 
-                                    - der_tanh((m_r - param_r) * param_alpha) * param_alpha * der_m_r[1] 
+                                    der_tanh(param_alpha * (m_r - param_R)) * param_alpha * der_m_r[1] 
+                                    - der_tanh(param_alpha * (m_r - param_r)) * param_alpha * der_m_r[1] 
                                   );
-        nablaHy[1+1*2] = param_A * der_tanh((m_theta - M_PI/4) * -param_eps) * -param_eps * der_m_theta[1]
+        nablaHy[1+1*2] = param_A * -der_tanh(param_eps * (m_theta - M_PI/4)) * param_eps * der_m_theta[1]
                             + param_forbidden * ( 
                                     der_tanh((m_r - param_R) * param_alpha) * param_alpha * der_m_r[1] 
                                     - der_tanh((m_r - param_r) * param_alpha) * param_alpha * der_m_r[1] 
@@ -155,11 +164,11 @@ namespace {
         nablaHy[0+1*2] = eip * (
                 matrixop::IMAGIZ * der_phi[1] 
                     * param_C * exp(-param_eps * pow((m_theta - M_PI/4), 2)) 
-                    * 0.5 * (tanh((m_r - param_r) * param_alpha) - tanh((m_r - param_R) * param_alpha))
+                    * 0.5 * (tanh(param_alpha * (m_r - param_r)) - tanh(param_alpha * (m_r - param_R)))
                 + param_C * exp(-param_eps * pow((m_theta - M_PI/4), 2)) * (-2.0) * param_eps * (m_theta - M_PI/4) * der_m_theta[1]
-                    * 0.5 * (tanh((m_r - param_r) * param_alpha) - tanh((m_r - param_R) * param_alpha))
+                    * 0.5 * (tanh(param_alpha * (m_r - param_r)) - tanh(param_alpha * (m_r - param_R)))
                 + param_C * exp(-param_eps * pow((m_theta - M_PI/4), 2))
-                    * 0.5 * (der_tanh((m_r - param_r) * param_alpha) * param_alpha * der_m_r[1] * - der_tanh((m_r - param_R) * param_alpha) * param_alpha * der_m_r[1])
+                    * 0.5 * (der_tanh(param_alpha * (m_r - param_r)) * param_alpha * der_m_r[1] - der_tanh(param_alpha * (m_r - param_R)) * param_alpha * der_m_r[1])
                 );
         nablaHy[1+0*2] = conj(nablaHy[0+1*2]);
         return nablaHy;

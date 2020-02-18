@@ -16,6 +16,7 @@
 #include "misc/MPIer.hpp"
 #include "boost/numeric/odeint.hpp"
 #include "boost/program_options.hpp"
+#include <boost/math/quadrature/trapezoidal.hpp>
 
 #include "2d_fssh_rescaling.hpp"
 #include "2d_yanze_potential.hpp"
@@ -31,19 +32,20 @@ enum {
 using namespace std;
 namespace po = boost::program_options;
 using boost::numeric::odeint::runge_kutta4;
+using boost::math::quadrature::trapezoidal;
 using state_t = vector< complex<double> >;
 const complex<double> zI(0.0, 1.0);
 
 vector<double> potential_params;
 
-double mass = 2000.0;
+double mass = 1000.0;
 int Nstep = 1000000;
-double dt = 0.1;
+double dt = 0.01;
 double init_s = 0.0;
-double init_E = 0.2;
+double init_E = 0.3;
 
-int output_step = 100;
-int Ntraj = 5000;
+int output_step = 1000;
+int Ntraj = 10000;
 int seed = 0;
 bool enable_hop = true;
 bool enable_xp_output = false;
@@ -119,16 +121,95 @@ inline bool argparse(int argc, char** argv)
     return true;
 }
 
+
 double xdist(double x) {
-    if (x < param_r - 0.5*param_R or x > 0.5*param_R) {
-        return 1e-20;
+    if (x < param_r - 0.5 * param_R or x > 0.5 * param_R) {
+        return 0.0;
     }
     else {
         const double L = param_R - param_r;
         return sqrt(2.0 / L) * sin(M_PI / L * (x + 0.5 * param_R - param_r));
     }
-};
+}
 
+
+template<typename Callable> 
+double wtrans(Callable func, double r, double p, double xmin = -10.0, double xmax = 10.0) {
+    auto intr = [&func, &r, &p](double x) {
+        return func(r-0.5*x) * func(r+0.5*x) * cos(x*p);
+    };
+    return trapezoidal(intr, xmin, xmax, 1e-6);
+}
+
+
+vector<vector<double>> rp_sample(size_t N, size_t Nstep_eql, size_t Nstep_collect, const vector<double>& rp0, const vector<double>& rpsigma) {
+    // sample r&p from Wigner function
+    vector<double> rpnow = rp0;
+    double wnow = wtrans(xdist, rpnow[0], rpnow[1]);
+    vector<double> rpnext(2);
+    double wnext;
+    // equilibrate
+    for (size_t istep(0); istep < Nstep_eql; ++istep) {
+        rpnext[0] = rpnow[0] + randomer::normal(0.0, rpsigma[0]);
+        rpnext[1] = rpnow[1] + randomer::normal(0.0, rpsigma[1]);
+        wnext = wtrans(xdist, rpnext[0], rpnext[1]);
+        if (wnext > 0.0 and (wnext > wnow or randomer::rand() < wnext / wnow)) {
+            rpnow = rpnext;
+            wnow = wnext;
+        }
+    }
+    // sampling
+    vector<vector<double>> rst;
+    rst.reserve(N);
+    size_t Nstep_sample = Nstep_collect * N;
+    for (size_t istep(0); istep < Nstep_sample; ++istep) {
+        rpnext[0] = rpnow[0] + randomer::normal(0.0, rpsigma[0]);
+        rpnext[1] = rpnow[1] + randomer::normal(0.0, rpsigma[1]);
+        wnext = wtrans(xdist, rpnext[0], rpnext[1]);
+        if (wnext > 0.0 and (wnext > wnow or randomer::rand() < wnext / wnow)) {
+            rpnow = rpnext;
+            wnow = wnext;
+        }
+        if (istep % Nstep_collect == 0) {
+            rst.push_back(rpnow);
+        }
+    }
+    return rst;
+}
+
+
+
+void init_state(vector<state_t>& state, int N) {
+    state.resize(N);
+    const vector<vector<double>> rps = rp_sample(N, 10000, 40, vector<double> { 0.5 * param_r, 0.0 }, vector<double> { (param_R - param_r) * 0.1, 1.0 });
+    int idx = 0;
+    for (auto& st : state) {
+        // st => x, y, vx, vy, c0, c1, s
+        st.resize(7, matrixop::ZEROZ);
+        if (init_pos == "left") {
+            st[0].real(-0.5 * param_R);
+            st[1].real(rps[idx][0]);
+            st[2].real(sqrt(init_E * 2 / mass));
+            st[3].real(rps[idx][1] / mass);
+            //st[3].real(0.0);
+            idx += 1;
+        }
+        else if (init_pos == "bottom") {
+            st[0].real(rps[idx][0]);
+            st[1].real(-0.5 * param_R);
+            st[2].real(rps[idx][1] / mass);
+            //st[2].real(0.0);
+            st[3].real(sqrt(init_E * 2 / mass));
+            idx += 1;
+        }
+        st[4].real(sqrt(1.0 - init_s));
+        st[5].real(sqrt(init_s));
+        st[6].real((randomer::rand() < init_s) ? 1.0 : 0.0);
+    }
+}
+
+
+/*
 void init_state(vector<state_t>& state, int N) {
     state.resize(N);
     const vector<double> xs = randomer::MHsample(xdist, 2*N, 10000, 100, 0.5 * param_r, 0.1 * (param_R - param_r));
@@ -173,6 +254,8 @@ void init_state(vector<state_t>& state, int N) {
         st[6].real((randomer::rand() < init_s) ? 1.0 : 0.0);
     }
 }
+*/
+
 
 void sys(const state_t& state, state_t& state_dot, const double /* t */) {
     // state = x, v, c0, c1, s
